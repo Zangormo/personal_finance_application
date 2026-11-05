@@ -13,16 +13,18 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyGridItemInfo
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridItemInfo
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -67,7 +69,7 @@ private fun rememberNow(): State<Long> = produceState(System.currentTimeMillis()
     }
 }
 
-private fun LazyGridItemInfo.contains(p: Offset): Boolean =
+private fun LazyStaggeredGridItemInfo.contains(p: Offset): Boolean =
     p.x >= offset.x && p.x <= offset.x + size.width && p.y >= offset.y && p.y <= offset.y + size.height
 
 /* ------------------------------------------------------------------------------------------ */
@@ -114,7 +116,10 @@ fun TodoCategoriesScreen(onBackPress: () -> Unit, onOpenCategory: (String) -> Un
     var adding by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf<TodoCategory?>(null) }
     var deleting by remember { mutableStateOf<TodoCategory?>(null) }
-    val gridState = rememberLazyGridState()
+    val gridState = rememberLazyStaggeredGridState()
+    // Tiles have different heights, so right after a swap the finger can still be over the tile it
+    // was swapped with; ignore that tile until the finger leaves it (prevents swapping back and forth).
+    var lastSwappedKey by remember { mutableStateOf<Any?>(null) }
 
     fun onDragMove() {
         val id = draggingId ?: return
@@ -124,9 +129,12 @@ fun TodoCategoriesScreen(onBackPress: () -> Unit, onOpenCategory: (String) -> Un
             dragInitialOffset.x + dragDelta.x + current.size.width / 2f,
             dragInitialOffset.y + dragDelta.y + current.size.height / 2f
         )
+        lastSwappedKey?.let { k -> if (visible.none { it.key == k && it.contains(center) }) lastSwappedKey = null }
         val target = visible.firstOrNull {
-            it.key != current.key && (it.key as? String)?.startsWith(CAT_KEY) == true && it.contains(center)
+            it.key != current.key && it.key != lastSwappedKey &&
+                (it.key as? String)?.startsWith(CAT_KEY) == true && it.contains(center)
         } ?: return
+        lastSwappedKey = target.key
         // localOrder is a State, so it is always fresh here (unlike values captured at composition)
         val ids = localOrder ?: currentOrder.map { it.id }
         val from = ids.indexOf(id)
@@ -149,6 +157,7 @@ fun TodoCategoriesScreen(onBackPress: () -> Unit, onOpenCategory: (String) -> Un
         }
         draggingId = null
         dragDelta = Offset.Zero
+        lastSwappedKey = null
     }
 
     // Wiggle of tiles in edit mode
@@ -172,11 +181,11 @@ fun TodoCategoriesScreen(onBackPress: () -> Unit, onOpenCategory: (String) -> Un
             modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
         )
 
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+        LazyVerticalStaggeredGrid(
+            columns = StaggeredGridCells.Fixed(2),
             state = gridState,
             userScrollEnabled = draggingId == null,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalItemSpacing = 12.dp,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier
                 .weight(1f)
@@ -318,16 +327,16 @@ private fun CategoryTile(
         label = "tileBorder"
     )
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(HOME_TILE_HEIGHT),
+        modifier = modifier.fillMaxWidth(),
         shape = CardShape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, borderColor)
     ) {
+        // The tile grows with the name, so the name is always shown in full
         Box(
             Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .heightIn(min = HOME_TILE_HEIGHT)
                 .combinedClickable(onClick = onClick, onLongClick = onLongClick)
         ) {
             Column(Modifier.padding(16.dp)) {
@@ -346,14 +355,13 @@ private fun CategoryTile(
                         )
                     }
                 }
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(12.dp))
                 Text(
                     name,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    fontWeight = FontWeight.SemiBold
                 )
+                Spacer(Modifier.height(6.dp))
                 Text(
                     when {
                         open == 0 && done == 0 -> "Empty"
@@ -442,6 +450,7 @@ fun TodoListScreen(categoryRoute: String, onBackPress: () -> Unit) {
     var editing by remember { mutableStateOf<TodoItem?>(null) }
     var adding by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<TodoItem?>(null) }
+    var viewingComment by remember { mutableStateOf<TodoItem?>(null) }
     BackHandler(enabled = editMode) { editMode = false }
 
     val onLongPress: () -> Unit = {
@@ -499,7 +508,8 @@ fun TodoListScreen(categoryRoute: String, onBackPress: () -> Unit) {
                             else scope.launch { TodoDataStore.toggle(context, item) }
                         },
                         onLongClick = onLongPress,
-                        onDelete = { deleting = item }
+                        onDelete = { deleting = item },
+                        onOpenComment = { viewingComment = item }
                     )
                 }
                 if (completed.isNotEmpty()) {
@@ -535,7 +545,8 @@ fun TodoListScreen(categoryRoute: String, onBackPress: () -> Unit) {
                                     else scope.launch { TodoDataStore.toggle(context, item) }
                                 },
                                 onLongClick = onLongPress,
-                                onDelete = { deleting = item }
+                                onDelete = { deleting = item },
+                        onOpenComment = { viewingComment = item }
                             )
                         }
                     }
@@ -556,6 +567,25 @@ fun TodoListScreen(categoryRoute: String, onBackPress: () -> Unit) {
                     if (isNew) TodoDataStore.addItem(context, item) else TodoDataStore.updateItem(context, item)
                 }
                 adding = false; editing = null
+            }
+        )
+    }
+    viewingComment?.let { item ->
+        AlertDialog(
+            onDismissRequest = { viewingComment = null },
+            title = { Text(item.title) },
+            text = {
+                SelectionContainer {
+                    Text(
+                        item.comment.orEmpty(),
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.verticalScroll(rememberScrollState())
+                    )
+                }
+            },
+            confirmButton = { TextButton(onClick = { viewingComment = null }) { Text("Close") } },
+            dismissButton = {
+                TextButton(onClick = { editing = item; viewingComment = null }) { Text("Edit") }
             }
         )
     }
@@ -610,6 +640,7 @@ private fun TodoRow(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onDelete: () -> Unit,
+    onOpenComment: () -> Unit,
 ) {
     val doneNow = item.isDoneNow(now)
     val recurringDone = item.repeat != null && doneNow
@@ -646,11 +677,10 @@ private fun TodoRow(
                 .fillMaxWidth()
                 .combinedClickable(onClick = onClick, onLongClick = onLongClick)
                 .padding(16.dp),
-            verticalAlignment = Alignment.Top
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 Modifier
-                    .padding(top = 2.dp)
                     .size(24.dp)
                     .clip(CircleShape)
                     .background(checkFill)
@@ -676,16 +706,18 @@ private fun TodoRow(
                     color = if (oneTimeDone) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
                 )
                 if (!item.comment.isNullOrBlank()) {
+                    Spacer(Modifier.height(4.dp))
                     Text(
                         item.comment,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 3
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
                 val repeat = item.repeat
                 if (repeat != null || item.dueAt != null) {
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(8.dp))
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -705,28 +737,52 @@ private fun TodoRow(
                     }
                 }
             }
+            if (!item.comment.isNullOrBlank()) {
+                AnimatedVisibility(
+                    visible = !editMode,
+                    enter = fadeIn() + expandHorizontally(),
+                    exit = fadeOut() + shrinkHorizontally()
+                ) {
+                    Box(
+                        Modifier
+                            .padding(start = 8.dp)
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                            .clickable(onClick = onOpenComment),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.Notes, "Open comment",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
             AnimatedVisibility(
                 visible = editMode,
                 enter = fadeIn() + expandHorizontally(),
                 exit = fadeOut() + shrinkHorizontally()
             ) {
-                Row {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Default.Edit, "Edit",
                         tint = accent,
                         modifier = Modifier
-                            .padding(start = 8.dp, top = 2.dp)
+                            .padding(start = 8.dp)
                             .size(22.dp)
                     )
-                    Icon(
-                        Icons.Default.Delete, "Delete",
-                        tint = Negative,
-                        modifier = Modifier
-                            .padding(start = 14.dp, top = 2.dp)
-                            .size(22.dp)
+                    Box(
+                        Modifier
+                            .padding(start = 6.dp)
+                            .size(36.dp)
                             .clip(CircleShape)
-                            .clickable(onClick = onDelete)
-                    )
+                            .clickable(onClick = onDelete),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Delete, "Delete", tint = Negative, modifier = Modifier.size(22.dp))
+                    }
                 }
             }
         }
@@ -770,17 +826,24 @@ private fun TodoItemDialog(
 
                 Box {
                     OutlinedCard(
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable { categoryMenu = true },
-                        shape = FieldShape
+                        onClick = { categoryMenu = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = FieldShape,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                        colors = CardDefaults.outlinedCardColors(containerColor = Color.Transparent)
                     ) {
-                        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Folder, null)
+                        Row(
+                            Modifier
+                                .heightIn(min = 56.dp)
+                                .padding(horizontal = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Folder, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(Modifier.width(12.dp))
                             Text(
                                 categories.find { it.id == categoryId }?.name ?: "Uncategorized",
                                 style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.weight(1f)
                             )
                             Icon(Icons.Default.ArrowDropDown, null)
@@ -803,23 +866,27 @@ private fun TodoItemDialog(
 
                 AnimatedContent(targetState = repeat == null, label = "dateOrTime") { oneTime ->
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            if (oneTime) {
-                                OutlinedButton(onClick = { pickDate = true }, modifier = Modifier.weight(1f), shape = FieldShape) {
-                                    Icon(Icons.Default.CalendarMonth, null, Modifier.size(18.dp))
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(dueAt?.let { Dates.date(it) } ?: "Date", maxLines = 1)
-                                }
-                            }
-                            OutlinedButton(onClick = { pickTime = true }, modifier = Modifier.weight(1f), shape = FieldShape) {
-                                Icon(Icons.Default.Schedule, null, Modifier.size(18.dp))
-                                Spacer(Modifier.width(6.dp))
-                                Text(if (dueAt != null && hasTime) Dates.time(dueAt!!) else "Time", maxLines = 1)
-                            }
-                            if (dueAt != null) {
-                                IconButton(onClick = { dueAt = null; hasTime = false }) { Icon(Icons.Default.Close, "Clear") }
-                            }
+                        if (oneTime) {
+                            PickerField(
+                                Icons.Default.CalendarMonth, "Date", dueAt?.let { Dates.date(it) },
+                                onClick = { pickDate = true },
+                                onClear = { dueAt = null; hasTime = false },
+                                placeholder = "Date (optional)"
+                            )
                         }
+                        PickerField(
+                            Icons.Default.Schedule, "Time",
+                            placeholder = "Time (optional)",
+                            value =
+                            dueAt?.takeIf { hasTime }?.let { Dates.time(it) },
+                            onClick = { pickTime = true },
+                            onClear = {
+                                hasTime = false
+                                // a recurring task keeps only a time, so without it there is nothing left
+                                if (!oneTime) dueAt = null
+                                else dueAt = dueAt?.let { startOfDay(it) }
+                            }
+                        )
                         if (!oneTime) {
                             val p = repeat
                             if (p != null) {
@@ -865,7 +932,7 @@ private fun TodoItemDialog(
         AppDatePickerDialog(initial = dueAt, onDismiss = { pickDate = false }, onPick = { dueAt = it })
     }
     if (pickTime) {
-        AppTimePickerDialog(base = dueAt, onDismiss = { pickTime = false }, onPick = { dueAt = it; hasTime = true })
+        AppTimePickerDialog(base = dueAt, baseHasTime = hasTime, onDismiss = { pickTime = false }, onPick = { dueAt = it; hasTime = true })
     }
 }
 

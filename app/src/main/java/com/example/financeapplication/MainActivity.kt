@@ -87,6 +87,7 @@ class MainActivity : ComponentActivity() {
                                             HomeDestination.SUBSCRIPTIONS -> "subscriptions"
                                             HomeDestination.DEBTS -> "debts"
                                             HomeDestination.TODO -> "todo"
+                                            HomeDestination.NOTES -> "notes"
                                         }
                                     )
                                 })
@@ -108,6 +109,18 @@ class MainActivity : ComponentActivity() {
                             composable("todo/{category}") { entry ->
                                 TodoListScreen(
                                     categoryRoute = entry.arguments?.getString("category") ?: UNCATEGORIZED_ROUTE,
+                                    onBackPress = back
+                                )
+                            }
+                            composable("notes") {
+                                NotesScreen(
+                                    onBackPress = back,
+                                    onOpenNote = { id -> navController.navigate("note/$id") }
+                                )
+                            }
+                            composable("note/{id}") { entry ->
+                                NoteScreen(
+                                    noteId = entry.arguments?.getString("id") ?: NEW_NOTE,
                                     onBackPress = back
                                 )
                             }

@@ -1,5 +1,6 @@
 package com.example.financeapplication.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,6 +17,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -164,33 +168,56 @@ private fun DebtCard(debt: Debt, modifier: Modifier, onClick: () -> Unit, onRepa
         onClick = onClick
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(debt.person, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                if (!debt.note.isNullOrBlank()) {
-                    Text(debt.note, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
-                }
-            }
-            Column(horizontalAlignment = Alignment.End) {
-                Text(Money.format(debt.remaining), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = color)
-                if (debt.paid > 0f) {
-                    Text(
-                        "of ${Money.format(debt.amount)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+            Text(
+                debt.person,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                Money.format(debt.remaining),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = color
+            )
+        }
+        if (!debt.note.isNullOrBlank()) {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                debt.note,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
         }
         if (debt.paid > 0f) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
             LinearProgressIndicator(
                 progress = { (debt.paid / debt.amount).coerceIn(0f, 1f) },
                 modifier = Modifier.fillMaxWidth(),
                 color = color,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
+            Spacer(Modifier.height(6.dp))
+            Row {
+                Text(
+                    "Returned ${Money.format(debt.paid)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    "of ${Money.format(debt.amount)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(12.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 when {
@@ -203,11 +230,26 @@ private fun DebtCard(debt: Debt, modifier: Modifier, onClick: () -> Unit, onRepa
                 modifier = Modifier.weight(1f)
             )
             if (!debt.isSettled) {
-                TextButton(onClick = onRepay) {
-                    Text(if (debt.direction == DebtDirection.I_OWE) "Pay back" else "Got back")
-                }
+                Text(
+                    if (debt.direction == DebtDirection.I_OWE) "Pay back" else "Got back",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
+                        .clickable(onClick = onRepay)
+                        .padding(horizontal = 14.dp, vertical = 7.dp)
+                )
             }
         }
+    }
+}
+
+@Composable
+private fun DetailRow(label: String, value: String, valueColor: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.Unspecified) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+        Text(value, fontWeight = FontWeight.Medium, color = valueColor)
     }
 }
 
@@ -250,27 +292,10 @@ private fun DebtDialog(
                     errorText = error
                 )
                 AppTextField(note, { note = it }, "Comment (optional)", singleLine = false)
-                OutlinedCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { pickDate = true },
-                    shape = FieldShape
-                ) {
-                    Row(Modifier.padding(start = 14.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.CalendarMonth, null)
-                        Spacer(Modifier.width(12.dp))
-                        Text(
-                            dueAt?.let { "Due " + Dates.date(it) } ?: "Due date (optional)",
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.weight(1f)
-                        )
-                        if (dueAt != null) {
-                            IconButton(onClick = { dueAt = null }) { Icon(Icons.Default.Close, "Clear") }
-                        } else {
-                            Spacer(Modifier.height(48.dp))
-                        }
-                    }
-                }
+                PickerField(
+                    Icons.Default.CalendarMonth, "Due date", dueAt?.let { Dates.date(it) },
+                    onClick = { pickDate = true }, onClear = { dueAt = null }, placeholder = "Due date (optional)"
+                )
                 if (initial == null) {
                     SwitchRow(
                         text = "Update balance",
@@ -369,19 +394,23 @@ private fun DebtDetailsDialog(
         text = {
             Column(
                 Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(if (debt.direction == DebtDirection.I_OWE) "I borrowed" else "I lent", fontWeight = FontWeight.SemiBold)
-                Text("Amount: ${Money.format(debt.amount)}")
-                Text("Remaining: ${Money.format(debt.remaining)}")
-                Text("Created: ${Dates.date(debt.createdAt)}")
-                debt.dueAt?.let { Text("Due: ${Dates.date(it)}") }
-                if (!debt.note.isNullOrBlank()) Text("Comment: ${debt.note}")
+                val color = if (debt.direction == DebtDirection.I_OWE) Negative else Positive
+                DetailRow("Type", if (debt.direction == DebtDirection.I_OWE) "I borrowed" else "I lent")
+                DetailRow("Amount", Money.format(debt.amount))
+                DetailRow("Remaining", Money.format(debt.remaining), color)
+                DetailRow("Created", Dates.date(debt.createdAt))
+                debt.dueAt?.let { DetailRow("Due", Dates.date(it)) }
+                if (!debt.note.isNullOrBlank()) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Text(debt.note)
+                }
                 if (debt.payments.orEmpty().isNotEmpty()) {
-                    Spacer(Modifier.height(6.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     Text("Payments", fontWeight = FontWeight.SemiBold)
                     debt.payments.orEmpty().sortedByDescending { it.timestamp }.forEach {
-                        Text("${Dates.dateTime(it.timestamp)} — ${Money.format(it.amount)}", style = MaterialTheme.typography.bodySmall)
+                        DetailRow(Dates.dateTime(it.timestamp), Money.format(it.amount))
                     }
                 }
             }

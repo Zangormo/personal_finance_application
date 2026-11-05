@@ -31,7 +31,7 @@ import com.example.financeapplication.ui.theme.*
 import com.example.financeapplication.utils.Dates
 import com.example.financeapplication.utils.Money
 
-enum class HomeDestination { ADD_SPENDING, ADD_INCOME, HISTORY, PLANNED, SAVINGS, OVERVIEW, SUBSCRIPTIONS, DEBTS, TODO }
+enum class HomeDestination { ADD_SPENDING, ADD_INCOME, HISTORY, PLANNED, SAVINGS, OVERVIEW, SUBSCRIPTIONS, DEBTS, TODO, NOTES }
 
 @Composable
 fun HomeScreen(onNavigate: (HomeDestination) -> Unit) {
@@ -48,6 +48,7 @@ fun HomeScreen(onNavigate: (HomeDestination) -> Unit) {
     val subs by SubscriptionsDataStore.getSubscriptions(context).collectAsState(initial = emptyList())
     val todos by TodoDataStore.getItems(context).collectAsState(initial = emptyList())
     val spendings by SpendingDataStore.getSpendings(context).collectAsState(initial = emptyList())
+    val notes by NotesDataStore.getNotes(context).collectAsState(initial = emptyList())
 
     val iOwe = debts.filter { it.direction == DebtDirection.I_OWE }.sumOf { it.remaining.toDouble() }.toFloat()
     val owedToMe = debts.filter { it.direction == DebtDirection.OWED_TO_ME }.sumOf { it.remaining.toDouble() }.toFloat()
@@ -131,12 +132,24 @@ fun HomeScreen(onNavigate: (HomeDestination) -> Unit) {
                 Modifier.weight(1f)
             ) { onNavigate(HomeDestination.DEBTS) }
         }
-        HomeTile(
-            "To-do",
-            if (openTodos > 0) "$openTodos open task${if (openTodos == 1) "" else "s"}" else "All done",
-            Icons.Filled.Checklist,
-            Modifier.fillMaxWidth()
-        ) { onNavigate(HomeDestination.TODO) }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            HomeTile(
+                "To-do",
+                if (openTodos > 0) "$openTodos open task${if (openTodos == 1) "" else "s"}" else "All done",
+                Icons.Filled.Checklist,
+                Modifier.weight(1f)
+            ) { onNavigate(HomeDestination.TODO) }
+            HomeTile(
+                "Notes",
+                when (notes.size) {
+                    0 -> "No notes yet"
+                    1 -> "1 note"
+                    else -> "${notes.size} notes"
+                },
+                Icons.Filled.Description,
+                Modifier.weight(1f)
+            ) { onNavigate(HomeDestination.NOTES) }
+        }
     }
 }
 
@@ -183,6 +196,7 @@ private fun BalanceHero(balance: Float, savings: Float, spentThisMonth: Float, o
 private fun HeroStat(label: String, value: String, modifier: Modifier) {
     Column(modifier) {
         Text(label, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.65f), maxLines = 1)
+        Spacer(Modifier.height(4.dp))
         Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 1)
     }
 }
@@ -214,6 +228,7 @@ private fun HomeTile(title: String, subtitle: String, icon: ImageVector, modifie
         }
         Spacer(Modifier.height(10.dp))
         Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(6.dp))
         Text(
             subtitle,
             style = MaterialTheme.typography.bodySmall,

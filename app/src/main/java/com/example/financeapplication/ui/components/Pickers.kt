@@ -64,11 +64,13 @@ fun AppTimePickerDialog(
     base: Long?,
     onDismiss: () -> Unit,
     onPick: (Long) -> Unit,
+    // false when [base] only carries a date: the picker then starts at 09:00 instead of 00:00
+    baseHasTime: Boolean = base != null,
 ) {
     val c = remember { Calendar.getInstance().apply { timeInMillis = base ?: System.currentTimeMillis() } }
     val state = rememberTimePickerState(
-        initialHour = if (base != null) c.get(Calendar.HOUR_OF_DAY) else 9,
-        initialMinute = if (base != null) c.get(Calendar.MINUTE) else 0,
+        initialHour = if (base != null && baseHasTime) c.get(Calendar.HOUR_OF_DAY) else 9,
+        initialMinute = if (base != null && baseHasTime) c.get(Calendar.MINUTE) else 0,
         is24Hour = true
     )
     AlertDialog(

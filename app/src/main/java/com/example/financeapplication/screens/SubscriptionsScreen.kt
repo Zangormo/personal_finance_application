@@ -195,21 +195,7 @@ private fun SubscriptionDialog(
                     selectedIndex = periods.indexOf(period).coerceAtLeast(0),
                     onSelect = { period = periods[it] }
                 )
-                OutlinedCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { pickDate = true },
-                    shape = FieldShape
-                ) {
-                    Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.CalendarMonth, null)
-                        Spacer(Modifier.width(12.dp))
-                        Column {
-                            Text("Next payment", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(Dates.date(nextDate), style = MaterialTheme.typography.bodyLarge)
-                        }
-                    }
-                }
+                PickerField(Icons.Default.CalendarMonth, "Next payment", Dates.date(nextDate), onClick = { pickDate = true })
                 NecessitySelector(necessity, { necessity = it })
             }
         },
