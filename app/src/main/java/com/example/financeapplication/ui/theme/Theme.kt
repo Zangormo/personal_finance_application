@@ -1,49 +1,48 @@
 package com.example.financeapplication.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.graphics.Color
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80,
-    surface = Color(0xFF4F4F4F),
-    surfaceVariant = Color(0xFF6E6E6E)
+private val AppColorScheme = darkColorScheme(
+    primary = Accent,
+    onPrimary = OnAccent,
+    primaryContainer = AccentContainer,
+    onPrimaryContainer = TextPrimary,
+    secondary = Positive,
+    onSecondary = Background,
+    secondaryContainer = SurfaceHighest,
+    onSecondaryContainer = TextPrimary,
+    tertiary = Warning,
+    onTertiary = Background,
+    background = Background,
+    onBackground = TextPrimary,
+    surface = Surface,
+    onSurface = TextPrimary,
+    surfaceVariant = SurfaceHigh,
+    onSurfaceVariant = TextSecondary,
+    surfaceContainerLowest = Background,
+    surfaceContainerLow = Surface,
+    surfaceContainer = Surface,
+    surfaceContainerHigh = SurfaceHigh,
+    surfaceContainerHighest = SurfaceHighest,
+    surfaceTint = Accent,
+    outline = Outline,
+    outlineVariant = OutlineVariant,
+    error = Negative,
+    onError = OnAccent,
+    errorContainer = NegativeContainer,
+    onErrorContainer = TextPrimary,
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40,
-    surface = Color(0xFFFFFFFF),
-    surfaceVariant = Color(0xFFE0E0E0)
-)
-
+/**
+ * The app always uses its own dark, high-contrast palette.
+ * Dynamic (wallpaper-based) colors are intentionally disabled.
+ */
 @Composable
-fun FinanceApplicationTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
-    content: @Composable () -> Unit
-) {
-    val colorScheme = when {
-        dynamicColor -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
-
+fun FinanceApplicationTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = AppColorScheme,
         typography = Typography,
         content = content
     )

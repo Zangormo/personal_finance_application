@@ -15,8 +15,12 @@ data class SpendingRecord(
     val amount: Float,
     val items: List<String>,
     val timestamp: Long,
-    val necessity: NecessityLevel = NecessityLevel.NECESSARY
+    val necessity: NecessityLevel = NecessityLevel.NECESSARY,
+    /** null for manual spendings, [SOURCE_SUBSCRIPTION] for automatic subscription charges. */
+    val source: String? = null
 )
+
+const val SOURCE_SUBSCRIPTION = "subscription"
 
 object SpendingDataStore {
 
@@ -34,7 +38,14 @@ object SpendingDataStore {
         }
     }
 
-    suspend fun addSpending(context: Context, amount: Float, items: List<String>, necessity: NecessityLevel = NecessityLevel.NECESSARY) {
+    suspend fun addSpending(
+        context: Context,
+        amount: Float,
+        items: List<String>,
+        necessity: NecessityLevel = NecessityLevel.NECESSARY,
+        timestamp: Long = System.currentTimeMillis(),
+        source: String? = null
+    ) {
         context.dataStoreSpending.edit { prefs ->
             val json = prefs[SPENDINGS_KEY] ?: ""
             val current = try {
@@ -50,8 +61,9 @@ object SpendingDataStore {
             current.add(SpendingRecord(
                 amount = amount,
                 items = items,
-                timestamp = System.currentTimeMillis(),
-                necessity = necessity
+                timestamp = timestamp,
+                necessity = necessity,
+                source = source
             ))
             
             prefs[SPENDINGS_KEY] = gson.toJson(current)
@@ -77,10 +89,9 @@ object SpendingDataStore {
             }
             
             if (index != -1) {
-                current[index] = SpendingRecord(
+                current[index] = current[index].copy(
                     amount = newAmount,
                     items = newItems,
-                    timestamp = oldSpending.timestamp,
                     necessity = newNecessity
                 )
             }

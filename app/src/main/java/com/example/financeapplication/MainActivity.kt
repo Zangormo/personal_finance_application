@@ -2,71 +2,50 @@ package com.example.financeapplication
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import com.example.financeapplication.ui.theme.FinanceApplicationTheme
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Icon
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.dp
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.financeapplication.screens.EssentialsScreen
-import com.example.financeapplication.screens.WishlistScreen
-import com.example.financeapplication.screens.AddSpendingScreen
-import com.example.financeapplication.screens.AddIncomeScreen
-import com.example.financeapplication.screens.SavingsScreen
-import com.example.financeapplication.screens.IncomeHistoryScreen
-import com.example.financeapplication.screens.SpendingHistoryScreen
-import com.example.financeapplication.screens.OverviewScreen
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import com.example.financeapplication.datastores.UserPreferencesDataStore
-import com.example.financeapplication.screens.WelcomeScreen
-import com.example.financeapplication.screens.SplashScreen
+import com.example.financeapplication.screens.*
+import com.example.financeapplication.ui.theme.FinanceApplicationTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+        )
         setContent {
             FinanceApplicationTheme {
                 val navController = rememberNavController()
                 val context = LocalContext.current
                 val scope = rememberCoroutineScope()
-                val isFirstRunState by UserPreferencesDataStore.isFirstRun(context).collectAsState(initial = null)
                 var startDestination by remember { mutableStateOf<String?>(null) }
 
-                if (isFirstRunState != null && startDestination != null) {
-                    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                if (startDestination != null) {
+                    Scaffold(
+                        modifier = Modifier.fillMaxSize(),
+                        containerColor = MaterialTheme.colorScheme.background
+                    ) { innerPadding ->
                         NavHost(
                             navController = navController,
                             startDestination = startDestination!!,
                             modifier = Modifier.padding(innerPadding)
                         ) {
+                            val back: () -> Unit = { navController.popBackStack() }
+
                             composable("welcome_screen") {
                                 WelcomeScreen(onContinueClicked = { balance ->
                                     scope.launch {
@@ -79,122 +58,39 @@ class MainActivity : ComponentActivity() {
                                 })
                             }
                             composable("main_screen") {
-                                MainScreen(
-                                    onTileClick = { tile ->
-                                        when (tile) {
-                                            "Essentials" -> navController.navigate("essentials_screen")
-                                            "Wishlist" -> navController.navigate("wishlist_screen")
-                                            "Add spending" -> navController.navigate("add_spending_screen")
-                                            "Add income" -> navController.navigate("add_income_screen")
-                                            "Savings" -> navController.navigate("savings_screen")
-                                            "Overview" -> navController.navigate("overview_screen")
-                                            "Spending history" -> navController.navigate("spending_history_screen")
-                                            "Income history" -> navController.navigate("income_history_screen")
+                                HomeScreen(onNavigate = { dest ->
+                                    navController.navigate(
+                                        when (dest) {
+                                            HomeDestination.ADD_SPENDING -> "transaction/spending"
+                                            HomeDestination.ADD_INCOME -> "transaction/income"
+                                            HomeDestination.HISTORY -> "history"
+                                            HomeDestination.PLANNED -> "planned"
+                                            HomeDestination.SAVINGS -> "savings"
+                                            HomeDestination.OVERVIEW -> "overview"
+                                            HomeDestination.SUBSCRIPTIONS -> "subscriptions"
+                                            HomeDestination.DEBTS -> "debts"
+                                            HomeDestination.TODO -> "todo"
                                         }
-                                    }
-
-                                )
+                                    )
+                                })
                             }
-                            composable("essentials_screen") {
-                                EssentialsScreen(onBackPress = { navController.popBackStack() })
-                            }
-                            composable("wishlist_screen") {
-                                WishlistScreen(onBackPress = { navController.popBackStack() })
-                            }
-                            composable("add_spending_screen") {
-                                AddSpendingScreen(onBackPress = { navController.popBackStack() })
-                            }
-                            composable("add_income_screen") {
-                                AddIncomeScreen(onBackPress = { navController.popBackStack() })
-                            }
-                            composable("savings_screen") {
-                                SavingsScreen(onBackPress = { navController.popBackStack() })
-                            }
-                            composable("overview_screen") {
-                                OverviewScreen(onBackPress = { navController.popBackStack() })
-                            }
-                            composable("income_history_screen") {
-                                IncomeHistoryScreen(onBackPress = { navController.popBackStack() })
-                            }
-                            composable("spending_history_screen") {
-                                SpendingHistoryScreen(onBackPress = { navController.popBackStack() })
-                            }
+                            composable("transaction/spending") { TransactionScreen(initialIsIncome = false, onBackPress = back) }
+                            composable("transaction/income") { TransactionScreen(initialIsIncome = true, onBackPress = back) }
+                            composable("history") { HistoryScreen(onBackPress = back) }
+                            composable("planned") { PlannedScreen(onBackPress = back) }
+                            composable("savings") { SavingsScreen(onBackPress = back) }
+                            composable("overview") { OverviewScreen(onBackPress = back) }
+                            composable("subscriptions") { SubscriptionsScreen(onBackPress = back) }
+                            composable("debts") { DebtsScreen(onBackPress = back) }
+                            composable("todo") { TodoScreen(onBackPress = back) }
                         }
                     }
                 } else {
-                    // Splash Screen
                     SplashScreen(onScreenDetermined = { destination ->
                         startDestination = destination
                     })
                 }
             }
-        }
-    }
-}
-
-data class MenuItem(val title: String, val icon: ImageVector)
-
-@Composable
-fun MainScreen(modifier: Modifier = Modifier, onTileClick: (String) -> Unit) {
-    val items = listOf(
-        MenuItem("Essentials", Icons.Filled.Home),
-        MenuItem("Wishlist", Icons.Filled.Star),
-        MenuItem("Add spending", Icons.Filled.ShoppingCart),
-        MenuItem("Add income", Icons.Filled.Add),
-        MenuItem("Savings", Icons.Filled.AccountBox),
-        MenuItem("Overview", Icons.Filled.Info),
-        MenuItem("Spending history", Icons.Filled.List),
-        MenuItem("Income history", Icons.Filled.ArrowForward)
-    )
-
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            top = 24.dp,
-            start = 16.dp,
-            end = 16.dp,
-            bottom = 16.dp
-        ),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        items(items) { menuItem ->
-            TileItem(
-                title = menuItem.title,
-                icon = menuItem.icon,
-                onClick = { onTileClick(menuItem.title) }
-            )
-        }
-    }
-}
-
-@Composable
-fun TileItem(title: String, icon: ImageVector, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(1f)
-            .clickable { onClick() },
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
         }
     }
 }

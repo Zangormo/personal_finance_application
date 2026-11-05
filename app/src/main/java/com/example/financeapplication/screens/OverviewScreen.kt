@@ -23,7 +23,13 @@ import com.example.financeapplication.classes.NecessityLevel
 import com.example.financeapplication.datastores.SpendingDataStore
 import com.example.financeapplication.datastores.IncomeDataStore
 import com.example.financeapplication.datastores.UserPreferencesDataStore
-import com.example.financeapplication.datastores.WishlistDatastore
+import com.example.financeapplication.datastores.PlannedItemsDataStore
+import com.example.financeapplication.datastores.PlannedType
+import com.example.financeapplication.ui.components.ScreenHeader
+import com.example.financeapplication.ui.theme.MediumColor
+import com.example.financeapplication.ui.theme.NecessaryColor
+import com.example.financeapplication.ui.theme.NotNeededColor
+import com.example.financeapplication.utils.Money
 import com.example.financeapplication.ui.theme.appColors
 import java.util.Calendar
 
@@ -39,9 +45,9 @@ fun OverviewScreen(onBackPress: () -> Unit = {}) {
     val savingsFlow = UserPreferencesDataStore.getSavingsBalance(context)
     val currentSavings by savingsFlow.collectAsState(initial = 0f)
 
-    val wishlistItemsFlow = WishlistDatastore.getWishlistItems(context)
+    val wishlistItemsFlow = PlannedItemsDataStore.getItems(context)
     val wishlistItems by wishlistItemsFlow.collectAsState(initial = emptyList())
-    val wishlistTotal = wishlistItems.sumOf { it.price.toDouble() }.toFloat()
+    val wishlistTotal = wishlistItems.filter { it.type == PlannedType.WISH }.sumOf { it.price.toDouble() }.toFloat()
 
     val overallBalance = currentBalance + currentSavings
 
@@ -56,33 +62,15 @@ fun OverviewScreen(onBackPress: () -> Unit = {}) {
     var selectedYear by remember { mutableIntStateOf(Calendar.getInstance().get(Calendar.YEAR)) }
     var selectedMonth by remember { mutableIntStateOf(Calendar.getInstance().get(Calendar.MONTH)) }
 
+    Column(Modifier.fillMaxSize()) {
+    ScreenHeader("Overview", onBack = onBackPress)
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp)
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 16.dp)
     ) {
-        // Header with back button
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = { onBackPress() }) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = colors.primaryText
-                )
-            }
-            Text(
-                text = "Overview",
-                style = MaterialTheme.typography.headlineLarge,
-                color = colors.primaryText,
-                modifier = Modifier.padding(start = 8.dp)
-            )
-        }
 
         // Overall balance card (Savings + Balance)
         Card(
@@ -104,7 +92,7 @@ fun OverviewScreen(onBackPress: () -> Unit = {}) {
                     color = colors.placeholderText
                 )
                 Text(
-                    text = "$${String.format("%.2f", overallBalance)}",
+                    text = Money.format(overallBalance),
                     style = MaterialTheme.typography.headlineSmall,
                     color = colors.primaryText
                 )
@@ -131,7 +119,7 @@ fun OverviewScreen(onBackPress: () -> Unit = {}) {
                     color = colors.placeholderText
                 )
                 Text(
-                    text = "$${String.format("%.2f", currentBalance)}",
+                    text = Money.format(currentBalance),
                     style = MaterialTheme.typography.headlineSmall,
                     color = colors.primaryText
                 )
@@ -158,7 +146,7 @@ fun OverviewScreen(onBackPress: () -> Unit = {}) {
                     color = colors.placeholderText
                 )
                 Text(
-                    text = "$${String.format("%.2f", currentSavings)}",
+                    text = Money.format(currentSavings),
                     style = MaterialTheme.typography.headlineSmall,
                     color = colors.primaryText
                 )
@@ -185,7 +173,7 @@ fun OverviewScreen(onBackPress: () -> Unit = {}) {
                     color = colors.placeholderText
                 )
                 Text(
-                    text = "$${String.format("%.2f", wishlistTotal)}",
+                    text = Money.format(wishlistTotal),
                     style = MaterialTheme.typography.headlineSmall,
                     color = colors.primaryText
                 )
@@ -297,19 +285,19 @@ fun OverviewScreen(onBackPress: () -> Unit = {}) {
                         LegendItem(
                             label = "Necessary",
                             amount = necessaryTotal,
-                            color = Color(33, 117, 30),
+                            color = NecessaryColor,
                             total = grandTotal
                         )
                         LegendItem(
                             label = "Medium",
                             amount = mediumTotal,
-                            color = Color(212, 130, 49),
+                            color = MediumColor,
                             total = grandTotal
                         )
                         LegendItem(
                             label = "Not Needed",
                             amount = notNeededTotal,
-                            color = Color(179, 52, 52),
+                            color = NotNeededColor,
                             total = grandTotal
                         )
                     }
@@ -358,7 +346,7 @@ fun OverviewScreen(onBackPress: () -> Unit = {}) {
                         color = colors.placeholderText
                     )
                     Text(
-                        text = "$${String.format("%.2f", grandTotal)}",
+                        text = Money.format(grandTotal),
                         style = MaterialTheme.typography.headlineSmall,
                         color = colors.primaryText
                     )
@@ -394,7 +382,7 @@ fun OverviewScreen(onBackPress: () -> Unit = {}) {
                     color = colors.placeholderText
                 )
                 Text(
-                    text = "$${String.format("%.2f", totalIncome)}",
+                    text = Money.format(totalIncome),
                     style = MaterialTheme.typography.headlineSmall,
                     color = colors.primaryText
                 )
@@ -402,6 +390,7 @@ fun OverviewScreen(onBackPress: () -> Unit = {}) {
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+    }
     }
 }
 
@@ -419,8 +408,8 @@ fun PeriodButton(
             .height(40.dp)
             .clip(RoundedCornerShape(8.dp)),
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (isSelected) colors.placeholderText else Color.Transparent,
-            contentColor = if (isSelected) colors.primaryText else colors.primaryText
+            containerColor = if (isSelected) colors.accent else Color.Transparent,
+            contentColor = if (isSelected) Color.White else colors.primaryText
         ),
         shape = RoundedCornerShape(8.dp),
         border = if (!isSelected) {
@@ -627,7 +616,7 @@ fun PieChart(
         // Draw Necessary (Green)
         if (necessaryAmount > 0) {
             drawArc(
-                color = Color(33, 117, 30),
+                color = NecessaryColor,
                 startAngle = -90f,
                 sweepAngle = necessaryPercentage * 360f - gapAngle,
                 useCenter = false,
@@ -643,7 +632,7 @@ fun PieChart(
         // Draw Medium (Yellow)
         if (mediumAmount > 0) {
             drawArc(
-                color = Color(212, 130, 49),
+                color = MediumColor,
                 startAngle = -90f + necessaryPercentage * 360f,
                 sweepAngle = mediumPercentage * 360f - gapAngle,
                 useCenter = false,
@@ -659,7 +648,7 @@ fun PieChart(
         // Draw Not Needed (Red)
         if (notNeededAmount > 0) {
             drawArc(
-                color = Color(179, 52, 52),
+                color = NotNeededColor,
                 startAngle = -90f + (necessaryPercentage + mediumPercentage) * 360f,
                 sweepAngle = notNeededPercentage * 360f - gapAngle,
                 useCenter = false,
@@ -707,7 +696,7 @@ fun LegendItem(
         )
         Spacer(modifier = Modifier.weight(1f))
         Text(
-            text = "$${String.format("%.2f", amount)} (${String.format("%.1f", percentage)}%)",
+            text = "${Money.format(amount)} (${String.format("%.1f", percentage)}%)",
             style = MaterialTheme.typography.bodySmall
         )
     }

@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.example.financeapplication.datastores.PlannedItemsDataStore
 import com.example.financeapplication.datastores.UserPreferencesDataStore
 import com.example.financeapplication.R
 import kotlinx.coroutines.delay
@@ -39,6 +40,7 @@ fun SplashScreen(
 
     LaunchedEffect(isFirstRunState) {
         if (isFirstRunState != null) {
+            PlannedItemsDataStore.migrateIfNeeded(context)
             delay(800)
             showAnimation = true
 
@@ -51,7 +53,7 @@ fun SplashScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF1F1F1F))
+            .background(Color(0xFF0A0C10))
             .alpha(alpha),
         contentAlignment = Alignment.Center
     ) {
