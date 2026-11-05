@@ -1,5 +1,10 @@
 package com.example.financeapplication.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,6 +35,9 @@ import com.example.financeapplication.utils.Money
 
 val CardShape = RoundedCornerShape(16.dp)
 val FieldShape = RoundedCornerShape(12.dp)
+
+/** Height shared by all tiles (home screen sections, to-do categories). */
+val HOME_TILE_HEIGHT = 120.dp
 
 @Composable
 fun ScreenHeader(
@@ -238,33 +247,61 @@ fun SegmentedSelector(
     modifier: Modifier = Modifier,
     selectedColors: List<Color>? = null,
 ) {
-    Row(
+    val gap = 4.dp
+    val segmentHeight = 40.dp
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
             .clip(FieldShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+            // a step lighter than cards and dialogs, so the track is visible everywhere
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            .padding(4.dp)
     ) {
-        options.forEachIndexed { index, option ->
-            val selected = index == selectedIndex
-            val bg = if (selected) selectedColors?.getOrNull(index) ?: MaterialTheme.colorScheme.primary else Color.Transparent
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(bg)
-                    .clickable { onSelect(index) }
-                    .padding(vertical = 10.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = option,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                    color = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1
+        val count = options.size.coerceAtLeast(1)
+        val segmentWidth = (maxWidth - gap * (count - 1)) / count
+        // The selection pill slides between segments instead of jumping
+        val indicatorOffset by animateDpAsState(
+            targetValue = (segmentWidth + gap) * selectedIndex,
+            animationSpec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow),
+            label = "segmentOffset"
+        )
+        val indicatorColor by animateColorAsState(
+            targetValue = selectedColors?.getOrNull(selectedIndex) ?: MaterialTheme.colorScheme.primary,
+            animationSpec = tween(250),
+            label = "segmentColor"
+        )
+        Box(
+            Modifier
+                .offset(x = indicatorOffset)
+                .width(segmentWidth)
+                .height(segmentHeight)
+                .clip(RoundedCornerShape(10.dp))
+                .background(indicatorColor)
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+            options.forEachIndexed { index, option ->
+                val selected = index == selectedIndex
+                val textColor by animateColorAsState(
+                    targetValue = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                    animationSpec = tween(200),
+                    label = "segmentText"
                 )
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(segmentHeight)
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable { onSelect(index) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = option,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                        color = textColor,
+                        maxLines = 1
+                    )
+                }
             }
         }
     }

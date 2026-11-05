@@ -75,7 +75,7 @@ fun SubscriptionsScreen(onBackPress: () -> Unit) {
                 if (subs.isEmpty()) item { EmptyState("No subscriptions yet") }
                 items(sorted, key = { it.id }) { sub ->
                     AppCard(
-                        Modifier
+                        Modifier.animateItem()
                             .fillMaxWidth()
                             .alpha(if (sub.active) 1f else 0.55f),
                         onClick = { editing = sub }

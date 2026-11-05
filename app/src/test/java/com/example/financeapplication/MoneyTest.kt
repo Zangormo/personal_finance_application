@@ -2,8 +2,11 @@ package com.example.financeapplication
 
 import com.example.financeapplication.datastores.RepeatPeriod
 import com.example.financeapplication.utils.Money
+import com.example.financeapplication.datastores.TodoItem
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.Calendar
 
@@ -49,6 +52,45 @@ class MoneyTest {
         assertEquals("10000000", Money.toInput(1.0E7f))
         assertEquals("", Money.toInput(0f))
         assertEquals(19.99f, Money.parse(Money.toInput(19.99f)))
+    }
+
+    private fun at(y: Int, m: Int, d: Int, h: Int = 0, min: Int = 0): Long =
+        Calendar.getInstance().apply { clear(); set(y, m, d, h, min) }.timeInMillis
+
+    @Test
+    fun weeklyPeriod_isMondayToSunday() {
+        // 2026-11-06 is a Friday, 2026-11-02 is Monday, 2026-11-08 is Sunday
+        val monday = at(2026, Calendar.NOVEMBER, 2)
+        assertEquals(monday, RepeatPeriod.WEEKLY.periodStart(at(2026, Calendar.NOVEMBER, 6, 18)))
+        assertEquals(monday, RepeatPeriod.WEEKLY.periodStart(at(2026, Calendar.NOVEMBER, 8, 23, 59)))
+        assertEquals(monday, RepeatPeriod.WEEKLY.periodStart(monday))
+        assertEquals(at(2026, Calendar.NOVEMBER, 9), RepeatPeriod.WEEKLY.nextPeriodStart(at(2026, Calendar.NOVEMBER, 6, 18)))
+    }
+
+    @Test
+    fun dailyMonthlyYearlyPeriods() {
+        val now = at(2026, Calendar.NOVEMBER, 6, 18, 30)
+        assertEquals(at(2026, Calendar.NOVEMBER, 6), RepeatPeriod.DAILY.periodStart(now))
+        assertEquals(at(2026, Calendar.NOVEMBER, 7), RepeatPeriod.DAILY.nextPeriodStart(now))
+        assertEquals(at(2026, Calendar.NOVEMBER, 1), RepeatPeriod.MONTHLY.periodStart(now))
+        assertEquals(at(2026, Calendar.DECEMBER, 1), RepeatPeriod.MONTHLY.nextPeriodStart(now))
+        assertEquals(at(2026, Calendar.JANUARY, 1), RepeatPeriod.YEARLY.periodStart(now))
+    }
+
+    @Test
+    fun recurringTask_doneUntilNextPeriod() {
+        val friday = at(2026, Calendar.NOVEMBER, 6, 12)
+        val task = TodoItem(title = "Gym", repeat = RepeatPeriod.WEEKLY, completedAt = friday)
+        assertTrue(task.isDoneNow(at(2026, Calendar.NOVEMBER, 8, 23, 59))) // Sunday: still done
+        assertFalse(task.isDoneNow(at(2026, Calendar.NOVEMBER, 9, 0, 0)))  // Monday 00:00: refreshed
+
+        val daily = TodoItem(title = "Read", repeat = RepeatPeriod.DAILY, completedAt = at(2026, Calendar.NOVEMBER, 6, 23, 50))
+        assertTrue(daily.isDoneNow(at(2026, Calendar.NOVEMBER, 6, 23, 59)))
+        assertFalse(daily.isDoneNow(at(2026, Calendar.NOVEMBER, 7, 0, 1)))
+
+        val monthly = TodoItem(title = "Rent", repeat = RepeatPeriod.MONTHLY, completedAt = at(2026, Calendar.NOVEMBER, 3))
+        assertTrue(monthly.isDoneNow(at(2026, Calendar.NOVEMBER, 30, 23)))
+        assertFalse(monthly.isDoneNow(at(2026, Calendar.DECEMBER, 1, 0, 0)))
     }
 
     @Test

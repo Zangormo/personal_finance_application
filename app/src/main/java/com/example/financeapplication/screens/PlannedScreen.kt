@@ -114,7 +114,7 @@ fun PlannedScreen(onBackPress: () -> Unit) {
                 item { EmptyState(if (tab == 0) "No essentials yet" else "Your wishlist is empty") }
             }
             items(visible, key = { it.id }) { item ->
-                AppCard(Modifier.fillMaxWidth(), onClick = { editing = item }) {
+                AppCard(Modifier.animateItem().fillMaxWidth(), onClick = { editing = item }) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(item.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)

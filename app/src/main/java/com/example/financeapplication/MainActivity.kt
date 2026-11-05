@@ -5,6 +5,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -42,7 +47,19 @@ class MainActivity : ComponentActivity() {
                         NavHost(
                             navController = navController,
                             startDestination = startDestination!!,
-                            modifier = Modifier.padding(innerPadding)
+                            modifier = Modifier.padding(innerPadding),
+                            enterTransition = {
+                                slideInHorizontally(tween(300)) { it / 5 } + fadeIn(tween(300))
+                            },
+                            exitTransition = {
+                                slideOutHorizontally(tween(300)) { -it / 10 } + fadeOut(tween(200))
+                            },
+                            popEnterTransition = {
+                                slideInHorizontally(tween(300)) { -it / 10 } + fadeIn(tween(300))
+                            },
+                            popExitTransition = {
+                                slideOutHorizontally(tween(300)) { it / 5 } + fadeOut(tween(200))
+                            }
                         ) {
                             val back: () -> Unit = { navController.popBackStack() }
 
@@ -82,7 +99,18 @@ class MainActivity : ComponentActivity() {
                             composable("overview") { OverviewScreen(onBackPress = back) }
                             composable("subscriptions") { SubscriptionsScreen(onBackPress = back) }
                             composable("debts") { DebtsScreen(onBackPress = back) }
-                            composable("todo") { TodoScreen(onBackPress = back) }
+                            composable("todo") {
+                                TodoCategoriesScreen(
+                                    onBackPress = back,
+                                    onOpenCategory = { id -> navController.navigate("todo/$id") }
+                                )
+                            }
+                            composable("todo/{category}") { entry ->
+                                TodoListScreen(
+                                    categoryRoute = entry.arguments?.getString("category") ?: UNCATEGORIZED_ROUTE,
+                                    onBackPress = back
+                                )
+                            }
                         }
                     }
                 } else {

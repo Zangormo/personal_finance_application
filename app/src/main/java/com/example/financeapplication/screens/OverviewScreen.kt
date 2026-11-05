@@ -189,34 +189,13 @@ fun OverviewScreen(onBackPress: () -> Unit = {}) {
         )
 
         // Period buttons
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            PeriodButton(
-                text = "7 Days",
-                isSelected = selectedPeriod == PeriodType.WEEK,
-                onClick = { selectedPeriod = PeriodType.WEEK },
-                colors = colors,
-                modifier = Modifier.weight(1f)
-            )
-            PeriodButton(
-                text = "Month",
-                isSelected = selectedPeriod == PeriodType.MONTH,
-                onClick = { selectedPeriod = PeriodType.MONTH },
-                colors = colors,
-                modifier = Modifier.weight(1f)
-            )
-            PeriodButton(
-                text = "Year",
-                isSelected = selectedPeriod == PeriodType.YEAR,
-                onClick = { selectedPeriod = PeriodType.YEAR },
-                colors = colors,
-                modifier = Modifier.weight(1f)
-            )
-        }
+        val periods = listOf(PeriodType.WEEK, PeriodType.MONTH, PeriodType.YEAR)
+        com.example.financeapplication.ui.components.SegmentedSelector(
+            options = listOf("7 Days", "Month", "Year"),
+            selectedIndex = periods.indexOf(selectedPeriod),
+            onSelect = { selectedPeriod = periods[it] },
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
 
         // Additional period selection based on type
         when (selectedPeriod) {

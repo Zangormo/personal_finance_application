@@ -1,6 +1,11 @@
 package com.example.financeapplication.screens
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.ui.text.style.TextOverflow
+import com.example.financeapplication.ui.components.HOME_TILE_HEIGHT
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,7 +53,7 @@ fun HomeScreen(onNavigate: (HomeDestination) -> Unit) {
     val owedToMe = debts.filter { it.direction == DebtDirection.OWED_TO_ME }.sumOf { it.remaining.toDouble() }.toFloat()
     val activeSubs = subs.filter { it.active }
     val nextSub = activeSubs.minByOrNull { it.nextChargeAt }
-    val openTodos = todos.count { !it.done }
+    val openTodos = todos.count { !it.isDoneNow() }
 
     val monthStart = remember {
         java.util.Calendar.getInstance().apply {
@@ -152,8 +157,14 @@ private fun BalanceHero(balance: Float, savings: Float, spentThisMonth: Float, o
                 .padding(20.dp)
         ) {
             Text("Balance", style = MaterialTheme.typography.labelLarge, color = Color.White.copy(alpha = 0.75f))
+            // Balance counts up/down smoothly when it changes
+            val animatedBalance by animateFloatAsState(
+                targetValue = balance,
+                animationSpec = tween(700, easing = FastOutSlowInEasing),
+                label = "balance"
+            )
             Text(
-                Money.format(balance),
+                Money.format(animatedBalance),
                 fontSize = 38.sp,
                 fontWeight = FontWeight.Bold,
                 color = if (balance < 0) Negative else Color.White
@@ -192,7 +203,7 @@ private fun QuickAction(text: String, icon: ImageVector, color: Color, modifier:
 
 @Composable
 private fun HomeTile(title: String, subtitle: String, icon: ImageVector, modifier: Modifier, onClick: () -> Unit) {
-    AppCard(modifier = modifier.heightIn(min = 104.dp), onClick = onClick) {
+    AppCard(modifier = modifier.height(HOME_TILE_HEIGHT), onClick = onClick) {
         Box(
             Modifier
                 .size(36.dp)
@@ -207,7 +218,8 @@ private fun HomeTile(title: String, subtitle: String, icon: ImageVector, modifie
             subtitle,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 2
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

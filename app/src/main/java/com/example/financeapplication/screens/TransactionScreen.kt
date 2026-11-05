@@ -1,5 +1,7 @@
 package com.example.financeapplication.screens
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -58,10 +60,24 @@ fun TransactionScreen(initialIsIncome: Boolean, onBackPress: () -> Unit) {
                 StatValue("Savings", Money.format(savings), Modifier.weight(1f))
             }
         }
-        if (isIncome) {
-            IncomeForm(onDone = onBackPress)
-        } else {
-            SpendingForm(balance = balance, savings = savings, onDone = onBackPress)
+        AnimatedContent(
+            targetState = isIncome,
+            modifier = Modifier.weight(1f),
+            transitionSpec = {
+                // Income is to the right of Spending, so slide accordingly
+                val dir = if (targetState) 1 else -1
+                (slideInHorizontally(tween(280)) { dir * it / 3 } + fadeIn(tween(280)))
+                    .togetherWith(slideOutHorizontally(tween(280)) { -dir * it / 3 } + fadeOut(tween(200)))
+            },
+            label = "transactionForm"
+        ) { income ->
+            Column(Modifier.fillMaxSize()) {
+                if (income) {
+                    IncomeForm(onDone = onBackPress)
+                } else {
+                    SpendingForm(balance = balance, savings = savings, onDone = onBackPress)
+                }
+            }
         }
     }
 }
@@ -263,16 +279,18 @@ private fun ColumnScope.SpendingForm(balance: Float, savings: Float, onDone: () 
 @Composable
 private fun SelectablePlannedRow(item: PlannedItem, selected: Boolean, onChange: (Boolean) -> Unit) {
     val accent = MaterialTheme.colorScheme.primary
+    val bg by animateColorAsState(
+        if (selected) accent.copy(alpha = 0.14f) else MaterialTheme.colorScheme.surface, tween(200), label = "rowBg"
+    )
+    val borderColor by animateColorAsState(
+        if (selected) accent else MaterialTheme.colorScheme.outlineVariant, tween(200), label = "rowBorder"
+    )
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(if (selected) accent.copy(alpha = 0.14f) else MaterialTheme.colorScheme.surface)
-            .border(
-                1.dp,
-                if (selected) accent else MaterialTheme.colorScheme.outlineVariant,
-                RoundedCornerShape(12.dp)
-            )
+            .background(bg)
+            .border(1.dp, borderColor, RoundedCornerShape(12.dp))
             .clickable { onChange(!selected) }
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically

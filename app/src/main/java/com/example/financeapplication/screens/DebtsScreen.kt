@@ -97,7 +97,7 @@ fun DebtsScreen(onBackPress: () -> Unit) {
                     item { EmptyState(if (tab == 0) "You don't owe anyone" else "Nobody owes you") }
                 }
                 items(visible, key = { it.id }) { debt ->
-                    DebtCard(debt, onClick = { details = debt }, onRepay = { repaying = debt })
+                    DebtCard(debt, Modifier.animateItem(), onClick = { details = debt }, onRepay = { repaying = debt })
                 }
             }
         }
@@ -154,11 +154,11 @@ fun DebtsScreen(onBackPress: () -> Unit) {
 }
 
 @Composable
-private fun DebtCard(debt: Debt, onClick: () -> Unit, onRepay: () -> Unit) {
+private fun DebtCard(debt: Debt, modifier: Modifier, onClick: () -> Unit, onRepay: () -> Unit) {
     val color = if (debt.direction == DebtDirection.I_OWE) Negative else Positive
     val overdue = !debt.isSettled && debt.dueAt != null && debt.dueAt < System.currentTimeMillis()
     AppCard(
-        Modifier
+        modifier
             .fillMaxWidth()
             .alpha(if (debt.isSettled) 0.55f else 1f),
         onClick = onClick

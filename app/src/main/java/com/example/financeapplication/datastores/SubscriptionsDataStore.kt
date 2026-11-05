@@ -26,6 +26,29 @@ enum class RepeatPeriod(val label: String) {
         return c.timeInMillis
     }
 
+    /**
+     * Start of the calendar period containing [now]: today 00:00, Monday 00:00 of this week,
+     * the 1st of this month 00:00, or January 1st 00:00.
+     */
+    fun periodStart(now: Long): Long {
+        val c = Calendar.getInstance().apply {
+            timeInMillis = startOfDay(now)
+        }
+        when (this) {
+            DAILY -> Unit
+            WEEKLY -> {
+                val daysSinceMonday = (c.get(Calendar.DAY_OF_WEEK) - Calendar.MONDAY + 7) % 7
+                c.add(Calendar.DAY_OF_YEAR, -daysSinceMonday)
+            }
+            MONTHLY -> c.set(Calendar.DAY_OF_MONTH, 1)
+            YEARLY -> c.set(Calendar.DAY_OF_YEAR, 1)
+        }
+        return c.timeInMillis
+    }
+
+    /** Start of the next calendar period – the moment a recurring task "refreshes". */
+    fun nextPeriodStart(now: Long): Long = shift(periodStart(now), 1)
+
     /** Approximate cost per month of something charged [amount] every period. */
     fun monthlyCost(amount: Float): Float = when (this) {
         DAILY -> amount * 30.4f
