@@ -1,5 +1,7 @@
 package com.example.financeapplication.screens
 
+import androidx.compose.ui.res.stringResource
+import com.example.financeapplication.R
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -227,7 +229,7 @@ fun NotesScreen(onBackPress: () -> Unit, onOpenNote: (String) -> Unit) {
                 ExtendedFloatingActionButton(
                     onClick = { onOpenNote(NEW_NOTE) },
                     icon = { Icon(Icons.Default.Add, null) },
-                    text = { Text("Note") }
+                    text = { Text(stringResource(R.string.note)) }
                 )
             }
         }
@@ -237,17 +239,17 @@ fun NotesScreen(onBackPress: () -> Unit, onOpenNote: (String) -> Unit) {
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            ScreenHeader("Notes", onBack = if (editMode) ({ editMode = false }) else onBackPress) {
+            ScreenHeader(stringResource(R.string.notes), onBack = if (editMode) ({ editMode = false }) else onBackPress) {
                 Crossfade(targetState = editMode, label = "notesHeader") { editing ->
                     if (editing) {
-                        TextButton(onClick = { editMode = false }) { Text("Done", fontWeight = FontWeight.Bold) }
+                        TextButton(onClick = { editMode = false }) { Text(stringResource(R.string.done), fontWeight = FontWeight.Bold) }
                     } else {
                         Box {
-                            IconButton(onClick = { sortMenu = true }) { Icon(Icons.AutoMirrored.Filled.Sort, "Sort") }
+                            IconButton(onClick = { sortMenu = true }) { Icon(Icons.AutoMirrored.Filled.Sort, stringResource(R.string.sort)) }
                             DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }) {
                                 NoteSort.entries.forEach { option ->
                                     DropdownMenuItem(
-                                        text = { Text(option.label) },
+                                        text = { Text(stringResource(option.label)) },
                                         trailingIcon = {
                                             if (option == (sort ?: NoteSort.EDITED)) {
                                                 Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
@@ -273,7 +275,7 @@ fun NotesScreen(onBackPress: () -> Unit, onOpenNote: (String) -> Unit) {
             AppTextField(
                 value = query,
                 onValueChange = { query = it },
-                label = "Search",
+                label = stringResource(R.string.search),
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 4.dp)
             )
             // Built only once notes and their sort order are loaded, so nothing animates on open
@@ -281,9 +283,9 @@ fun NotesScreen(onBackPress: () -> Unit, onOpenNote: (String) -> Unit) {
             AnimatedVisibility(visible = editMode || (sort == NoteSort.CUSTOM && all.isNotEmpty())) {
                 Text(
                     when {
-                        !editMode -> "Long press a note to reorder or configure it"
-                        q.isNotEmpty() -> "Clear the search to reorder · tap a note to configure it"
-                        else -> "Drag notes to reorder · tap a note to configure it"
+                        !editMode -> stringResource(R.string.notes_hint)
+                        q.isNotEmpty() -> stringResource(R.string.notes_edit_hint_search)
+                        else -> stringResource(R.string.notes_edit_hint)
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = if (editMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -364,7 +366,7 @@ fun NotesScreen(onBackPress: () -> Unit, onOpenNote: (String) -> Unit) {
                 if (notes != null && visible.isEmpty()) {
                     item(key = "empty") {
                         EmptyState(
-                            if (q.isEmpty()) "No notes yet. Tap \"Note\" to write one." else "Nothing found",
+                            if (q.isEmpty()) stringResource(R.string.notes_empty) else stringResource(R.string.nothing_found),
                             Modifier.animateItem()
                         )
                     }
@@ -416,26 +418,26 @@ private const val NOTE_KEY = "n:"
 private fun NoteSettingsDialog(note: Note, onSecret: (Boolean) -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(note.title.ifBlank { "Untitled" }, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+        title = { Text(note.title.ifBlank { stringResource(R.string.untitled) }, maxLines = 2, overflow = TextOverflow.Ellipsis) },
         text = {
             Column {
                 SwitchRow(
-                    text = "Secret note",
+                    text = stringResource(R.string.secret_note),
                     checked = note.isSecret(),
                     onCheckedChange = onSecret,
-                    subtitle = "Hidden from the list. It appears only when its exact title is typed into the search."
+                    subtitle = stringResource(R.string.secret_note_subtitle)
                 )
                 if (note.isSecret() && note.title.isBlank()) {
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "This note has no title, so it cannot be found. Give it a title to be able to open it.",
+                        stringResource(R.string.secret_note_no_title),
                         style = MaterialTheme.typography.bodySmall,
                         color = Negative
                     )
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } }
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.done)) } }
     )
 }
 
@@ -473,14 +475,14 @@ private fun NoteCard(note: Note, editMode: Boolean, modifier: Modifier, onConfig
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (note.isSecret()) {
                         Icon(
-                            Icons.Default.Lock, "Secret",
+                            Icons.Default.Lock, stringResource(R.string.secret),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(Modifier.width(6.dp))
                     }
                     Text(
-                        note.title.ifBlank { "Untitled" },
+                        note.title.ifBlank { stringResource(R.string.untitled) },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = if (note.title.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
@@ -520,7 +522,7 @@ private fun NoteCard(note: Note, editMode: Boolean, modifier: Modifier, onConfig
             }
             AnimatedVisibility(visible = editMode, modifier = Modifier.align(Alignment.CenterVertically)) {
                 IconButton(onClick = onConfigure) {
-                    Icon(Icons.Default.Tune, "Configure note", tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Default.Tune, stringResource(R.string.configure_note), tint = MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -635,7 +637,7 @@ fun NoteScreen(noteId: String, onBackPress: () -> Unit) {
             importing = true
             val imported = uris.mapNotNull { NotesDataStore.importFile(context, it) }
             importing = false
-            if (imported.size < uris.size) Toast.makeText(context, "Some files could not be attached", Toast.LENGTH_SHORT).show()
+            if (imported.size < uris.size) Toast.makeText(context, context.getString(R.string.files_not_attached), Toast.LENGTH_SHORT).show()
             attachments = attachments + imported
         }
     }
@@ -646,20 +648,20 @@ fun NoteScreen(noteId: String, onBackPress: () -> Unit) {
             .imePadding()
     ) {
         ScreenHeader("", onBack = leave) {
-            IconButton(onClick = { filePicker.launch(arrayOf("*/*")) }) { Icon(Icons.Default.AttachFile, "Attach file") }
-            IconButton(onClick = { addingLink = true }) { Icon(Icons.Default.Link, "Add link") }
+            IconButton(onClick = { filePicker.launch(arrayOf("*/*")) }) { Icon(Icons.Default.AttachFile, stringResource(R.string.attach_file)) }
+            IconButton(onClick = { addingLink = true }) { Icon(Icons.Default.Link, stringResource(R.string.add_link)) }
             Crossfade(targetState = editing, label = "editToggle") { isEditing ->
                 if (isEditing) {
-                    IconButton(onClick = { editing = false }) { Icon(Icons.Default.Check, "Done", tint = MaterialTheme.colorScheme.primary) }
+                    IconButton(onClick = { editing = false }) { Icon(Icons.Default.Check, stringResource(R.string.done), tint = MaterialTheme.colorScheme.primary) }
                 } else {
-                    IconButton(onClick = { editing = true }) { Icon(Icons.Default.Edit, "Edit") }
+                    IconButton(onClick = { editing = true }) { Icon(Icons.Default.Edit, stringResource(R.string.edit)) }
                 }
             }
             Box {
-                IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "More") }
+                IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, stringResource(R.string.more)) }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                     DropdownMenuItem(
-                        text = { Text("Delete note", color = Negative) },
+                        text = { Text(stringResource(R.string.delete_note), color = Negative) },
                         leadingIcon = { Icon(Icons.Default.Delete, null, tint = Negative) },
                         onClick = { menu = false; deleting = true }
                     )
@@ -699,7 +701,7 @@ fun NoteScreen(noteId: String, onBackPress: () -> Unit) {
 
             if (attachments.isNotEmpty() || importing) {
                 Spacer(Modifier.height(24.dp))
-                SectionTitle("Attachments", trailing = if (importing) "Copying…" else attachments.size.toString())
+                SectionTitle(stringResource(R.string.attachments), trailing = if (importing) stringResource(R.string.copying) else attachments.size.toString())
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     attachments.forEach { a ->
                         AttachmentRow(
@@ -752,9 +754,9 @@ fun NoteScreen(noteId: String, onBackPress: () -> Unit) {
     }
     removing?.let { a ->
         ConfirmDialog(
-            title = "Remove attachment?",
-            text = "\"${a.name}\" will be removed from the note.",
-            confirmText = "Remove",
+            title = stringResource(R.string.remove_attachment_title),
+            text = stringResource(R.string.remove_attachment_text, a.name),
+            confirmText = stringResource(R.string.remove),
             onConfirm = {
                 attachments = attachments.filter { it.id != a.id }
                 if (a.type == AttachmentType.FILE) NotesDataStore.deleteFile(context, a)
@@ -765,8 +767,8 @@ fun NoteScreen(noteId: String, onBackPress: () -> Unit) {
     }
     if (deleting) {
         ConfirmDialog(
-            title = "Delete note?",
-            text = "The note and its attached files will be deleted.",
+            title = stringResource(R.string.delete_note_title),
+            text = stringResource(R.string.delete_note_text),
             onConfirm = {
                 deleting = false
                 scope.launch {
@@ -812,7 +814,7 @@ private fun NoteEditor(
                 .focusRequester(titleFocus)
                 .padding(vertical = 8.dp),
             decorationBox = { inner ->
-                if (title.isEmpty()) Text("Title", style = titleStyle.copy(color = hint))
+                if (title.isEmpty()) Text(stringResource(R.string.title), style = titleStyle.copy(color = hint))
                 inner()
             }
         )
@@ -830,7 +832,7 @@ private fun NoteEditor(
                 .heightIn(min = 240.dp)
                 .onFocusChanged { onBodyFocus(it.isFocused) },
             decorationBox = { inner ->
-                if (text.isEmpty()) Text("Start writing…", style = bodyStyle.copy(color = hint))
+                if (text.isEmpty()) Text(stringResource(R.string.start_writing), style = bodyStyle.copy(color = hint))
                 inner()
             }
         )
@@ -843,7 +845,7 @@ private fun NoteViewer(title: String, text: String, spans: List<NoteSpan>, updat
     val body = remember(text, spans, linkColor) { richText(text, spans, linkColor) }
     Column(Modifier.fillMaxWidth()) {
         Text(
-            title.ifBlank { "Untitled" },
+            title.ifBlank { stringResource(R.string.untitled) },
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = if (title.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
@@ -851,7 +853,7 @@ private fun NoteViewer(title: String, text: String, spans: List<NoteSpan>, updat
         )
         if (updatedAt != null) {
             Text(
-                "Edited " + Dates.dateTime(updatedAt),
+                stringResource(R.string.edited_at, Dates.dateTime(updatedAt)),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -859,7 +861,7 @@ private fun NoteViewer(title: String, text: String, spans: List<NoteSpan>, updat
         Spacer(Modifier.height(16.dp))
         if (text.isBlank()) {
             Text(
-                "Tap to start writing",
+                stringResource(R.string.tap_to_start_writing),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
@@ -894,7 +896,7 @@ private fun openAttachment(context: Context, a: NoteAttachment) {
             AttachmentType.LINK -> Intent(Intent.ACTION_VIEW, Uri.parse(a.url ?: return))
             AttachmentType.FILE -> {
                 val file = NotesDataStore.fileOf(context, a)?.takeIf { it.exists() } ?: run {
-                    Toast.makeText(context, "The file is missing", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.file_missing), Toast.LENGTH_SHORT).show()
                     return
                 }
                 val uri = FileProvider.getUriForFile(context, context.packageName + ".files", file)
@@ -905,9 +907,9 @@ private fun openAttachment(context: Context, a: NoteAttachment) {
         }
         context.startActivity(Intent.createChooser(intent, a.name))
     } catch (_: ActivityNotFoundException) {
-        Toast.makeText(context, "No app can open this", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.no_app_to_open), Toast.LENGTH_SHORT).show()
     } catch (_: Exception) {
-        Toast.makeText(context, "Could not open", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.could_not_open), Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -977,7 +979,7 @@ private fun AttachmentRow(attachment: NoteAttachment, onOpen: () -> Unit, onRemo
                 }
             }
             IconButton(onClick = onRemove) {
-                Icon(Icons.Default.Close, "Remove", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(Icons.Default.Close, stringResource(R.string.remove), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -1006,21 +1008,21 @@ private fun LinkDialog(onDismiss: () -> Unit, onSave: (url: String, name: String
     val valid = url.isNotBlank() && Patterns.WEB_URL.matcher(url.trim()).matches() || url.trim().contains("://")
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add link") },
+        title = { Text(stringResource(R.string.add_link)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 AppTextField(
                     value = url,
                     onValueChange = { url = it },
-                    label = "Link",
+                    label = stringResource(R.string.link),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next)
                 )
-                AppTextField(value = name, onValueChange = { name = it }, label = "Name (optional)")
+                AppTextField(value = name, onValueChange = { name = it }, label = stringResource(R.string.name_optional))
             }
         },
         confirmButton = {
-            TextButton(enabled = valid, onClick = { onSave(normalized, name.trim().ifEmpty { url.trim() }) }) { Text("Add") }
+            TextButton(enabled = valid, onClick = { onSave(normalized, name.trim().ifEmpty { url.trim() }) }) { Text(stringResource(R.string.add)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }
     )
 }

@@ -59,7 +59,7 @@ fun SplashScreen(
     ) {
         Icon(
             painter = painterResource(id = R.drawable.ic_app_logo),
-            contentDescription = "App Logo",
+            contentDescription = null,
             modifier = Modifier.size(120.dp),
             tint = Color.Unspecified
         )

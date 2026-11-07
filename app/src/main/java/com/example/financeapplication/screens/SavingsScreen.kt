@@ -1,5 +1,7 @@
 package com.example.financeapplication.screens
 
+import androidx.compose.ui.res.stringResource
+import com.example.financeapplication.R
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -36,23 +38,23 @@ fun SavingsScreen(onBackPress: () -> Unit = {}) {
             .imePadding()
             .verticalScroll(rememberScrollState())
     ) {
-        ScreenHeader("Savings", onBack = onBackPress)
+        ScreenHeader(stringResource(R.string.savings), onBack = onBackPress)
         Column(
             Modifier.padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             AppCard(Modifier.fillMaxWidth()) {
-                Text("Savings", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.savings), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(Money.format(savings), fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Positive)
                 Spacer(Modifier.height(8.dp))
                 Row {
-                    StatValue("Balance", Money.format(balance), Modifier.weight(1f))
-                    StatValue("Total", Money.format(balance + savings), Modifier.weight(1f))
+                    StatValue(stringResource(R.string.balance), Money.format(balance), Modifier.weight(1f))
+                    StatValue(stringResource(R.string.total), Money.format(balance + savings), Modifier.weight(1f))
                 }
             }
 
             SegmentedSelector(
-                options = listOf("Save", "Withdraw"),
+                options = listOf(stringResource(R.string.save_money), stringResource(R.string.withdraw)),
                 selectedIndex = tab,
                 onSelect = { tab = it; error = null }
             )
@@ -60,7 +62,7 @@ fun SavingsScreen(onBackPress: () -> Unit = {}) {
             AmountField(
                 value = amountText,
                 onValueChange = { amountText = it; error = null },
-                label = if (isSave) "Amount to save" else "Amount to withdraw",
+                label = if (isSave) stringResource(R.string.amount_to_save) else stringResource(R.string.amount_to_withdraw),
                 isError = error != null,
                 errorText = error
             )
@@ -69,18 +71,18 @@ fun SavingsScreen(onBackPress: () -> Unit = {}) {
             val available = if (isSave) balance else savings
             if (available > 0f) {
                 TextButton(onClick = { amountText = Money.toInput(available); error = null }) {
-                    Text("Use all: ${Money.format(available)}")
+                    Text(stringResource(R.string.use_all, Money.format(available)))
                 }
             }
 
             PrimaryButton(
-                text = if (isSave) "Add to savings" else "Withdraw from savings",
+                text = if (isSave) stringResource(R.string.add_to_savings) else stringResource(R.string.withdraw_from_savings),
                 onClick = {
                     val amount = Money.parse(amountText)
                     when {
-                        amount == null || amount <= 0f -> error = "Enter a valid amount, e.g. 100,50 or 100.50"
-                        isSave && amount > balance -> error = "Amount can't exceed the balance (${Money.format(balance)})"
-                        !isSave && amount > savings -> error = "Amount can't exceed savings (${Money.format(savings)})"
+                        amount == null || amount <= 0f -> error = context.getString(R.string.amount_error)
+                        isSave && amount > balance -> error = context.getString(R.string.exceeds_balance, Money.format(balance))
+                        !isSave && amount > savings -> error = context.getString(R.string.exceeds_savings, Money.format(savings))
                         else -> scope.launch {
                             if (isSave) {
                                 UserPreferencesDataStore.updateBalance(context, -amount)

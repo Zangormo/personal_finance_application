@@ -1,5 +1,7 @@
 package com.example.financeapplication.screens
 
+import androidx.compose.ui.res.stringResource
+import com.example.financeapplication.R
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -69,9 +71,9 @@ fun HistoryScreen(onBackPress: () -> Unit) {
     val grouped = remember(entries) { entries.groupBy { dayKey(it.timestamp) } }
 
     Column(Modifier.fillMaxSize()) {
-        ScreenHeader("History", onBack = onBackPress)
+        ScreenHeader(stringResource(R.string.history), onBack = onBackPress)
         SegmentedSelector(
-            options = listOf("All", "Spending", "Income"),
+            options = listOf(stringResource(R.string.all), stringResource(R.string.spending), stringResource(R.string.income)),
             selectedIndex = filter,
             onSelect = { filter = it },
             modifier = Modifier.padding(horizontal = 16.dp)
@@ -79,7 +81,7 @@ fun HistoryScreen(onBackPress: () -> Unit) {
         AppTextField(
             value = query,
             onValueChange = { query = it },
-            label = "Search",
+            label = stringResource(R.string.search),
             modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp)
         )
         LazyColumn(
@@ -88,7 +90,7 @@ fun HistoryScreen(onBackPress: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (entries.isEmpty()) {
-                item { EmptyState(if (q.isEmpty()) "No records yet" else "Nothing found") }
+                item { EmptyState(if (q.isEmpty()) stringResource(R.string.no_records) else stringResource(R.string.nothing_found)) }
             }
             grouped.forEach { (day, dayEntries) ->
                 item(key = "h$day") {
@@ -136,8 +138,8 @@ fun HistoryScreen(onBackPress: () -> Unit) {
 
     deleting?.let { entry ->
         ConfirmDialog(
-            title = "Delete record?",
-            text = "The balance will be corrected by ${Money.format(entry.amount)}.",
+            title = stringResource(R.string.delete_record_title),
+            text = stringResource(R.string.delete_record_text, Money.format(entry.amount)),
             onConfirm = {
                 scope.launch {
                     when (entry) {
@@ -170,9 +172,10 @@ private fun HistoryEntry.matches(q: String): Boolean {
     return Money.format(amount).replace(',', '.').contains(number) || amount.toString().contains(number)
 }
 
+@Composable
 private fun HistoryEntry.title(): String = when (this) {
-    is HistoryEntry.Spend -> record.items.orEmpty().joinToString(", ").ifEmpty { "Spending" }
-    is HistoryEntry.Earn -> record.description.orEmpty().ifEmpty { "Income" }
+    is HistoryEntry.Spend -> record.items.orEmpty().joinToString(", ").ifEmpty { stringResource(R.string.spending) }
+    is HistoryEntry.Earn -> record.description.orEmpty().ifEmpty { stringResource(R.string.income) }
 }
 
 @Composable
@@ -206,7 +209,7 @@ private fun HistoryRow(entry: HistoryEntry, onClick: () -> Unit) {
                             modifier = Modifier.size(12.dp)
                         )
                         Text(
-                            " subscription",
+                            " " + stringResource(R.string.subscription_lower),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -228,26 +231,26 @@ private fun HistoryRow(entry: HistoryEntry, onClick: () -> Unit) {
 private fun HistoryDetailDialog(entry: HistoryEntry, onDismiss: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (entry is HistoryEntry.Earn) "Income" else "Spending") },
+        title = { Text(if (entry is HistoryEntry.Earn) stringResource(R.string.income) else stringResource(R.string.spending)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 when (entry) {
                     is HistoryEntry.Spend -> {
-                        DetailLine("Items", entry.record.items.orEmpty().joinToString("\n").ifEmpty { "—" })
-                        DetailLine("Necessity", necessityLabel(entry.record.necessity))
-                        if (entry.record.source == SOURCE_SUBSCRIPTION) DetailLine("Source", "Subscription (automatic)")
+                        DetailLine(stringResource(R.string.items), entry.record.items.orEmpty().joinToString("\n").ifEmpty { "—" })
+                        DetailLine(stringResource(R.string.necessity), necessityLabel(entry.record.necessity))
+                        if (entry.record.source == SOURCE_SUBSCRIPTION) DetailLine(stringResource(R.string.source), stringResource(R.string.subscription_automatic))
                     }
-                    is HistoryEntry.Earn -> DetailLine("Description", entry.record.description.orEmpty().ifEmpty { "—" })
+                    is HistoryEntry.Earn -> DetailLine(stringResource(R.string.description), entry.record.description.orEmpty().ifEmpty { "—" })
                 }
-                DetailLine("Amount", Money.format(entry.amount))
-                DetailLine("Date", Dates.dateTime(entry.timestamp))
+                DetailLine(stringResource(R.string.amount), Money.format(entry.amount))
+                DetailLine(stringResource(R.string.date), Dates.dateTime(entry.timestamp))
             }
         },
-        confirmButton = { TextButton(onClick = onEdit) { Text("Edit") } },
+        confirmButton = { TextButton(onClick = onEdit) { Text(stringResource(R.string.edit)) } },
         dismissButton = {
             Row {
-                TextButton(onClick = onDelete) { Text("Delete", color = MaterialTheme.colorScheme.error) }
-                TextButton(onClick = onDismiss) { Text("Close") }
+                TextButton(onClick = onDelete) { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
             }
         }
     )
@@ -268,6 +271,7 @@ private fun HistoryEditDialog(
     onSaveSpending: (SpendingRecord, Float, NecessityLevel) -> Unit,
     onSaveIncome: (IncomeRecord, Float, String) -> Unit,
 ) {
+    val context = LocalContext.current
     var amountText by remember { mutableStateOf(Money.toInput(entry.amount)) }
     var error by remember { mutableStateOf<String?>(null) }
     var necessity by remember {
@@ -277,19 +281,19 @@ private fun HistoryEditDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (entry is HistoryEntry.Earn) "Edit income" else "Edit spending") },
+        title = { Text(if (entry is HistoryEntry.Earn) stringResource(R.string.edit_income) else stringResource(R.string.edit_spending)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 AmountField(
                     value = amountText,
                     onValueChange = { amountText = it; error = null },
-                    label = "Amount",
+                    label = stringResource(R.string.amount),
                     isError = error != null,
                     errorText = error
                 )
                 when (entry) {
                     is HistoryEntry.Spend -> NecessitySelector(necessity, { necessity = it })
-                    is HistoryEntry.Earn -> AppTextField(description, { description = it }, "Description")
+                    is HistoryEntry.Earn -> AppTextField(description, { description = it }, stringResource(R.string.description))
                 }
             }
         },
@@ -297,15 +301,15 @@ private fun HistoryEditDialog(
             TextButton(onClick = {
                 val amount = Money.parse(amountText)
                 when {
-                    amount == null -> error = "Enter a valid amount"
-                    amount <= 0f -> error = "Amount must be greater than 0"
+                    amount == null -> error = context.getString(R.string.invalid_amount)
+                    amount <= 0f -> error = context.getString(R.string.amount_positive)
                     else -> when (entry) {
                         is HistoryEntry.Spend -> onSaveSpending(entry.record, amount, necessity)
                         is HistoryEntry.Earn -> onSaveIncome(entry.record, amount, description.trim())
                     }
                 }
-            }) { Text("Save") }
+            }) { Text(stringResource(R.string.save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }
     )
 }

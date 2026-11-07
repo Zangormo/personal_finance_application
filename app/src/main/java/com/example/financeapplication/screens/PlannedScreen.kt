@@ -1,5 +1,7 @@
 package com.example.financeapplication.screens
 
+import androidx.compose.ui.res.stringResource
+import com.example.financeapplication.R
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -46,10 +48,10 @@ fun PlannedScreen(onBackPress: () -> Unit) {
             .fillMaxSize()
             .imePadding()
     ) {
-        ScreenHeader("Planned", onBack = onBackPress)
+        ScreenHeader(stringResource(R.string.planned), onBack = onBackPress)
         Column(Modifier.padding(horizontal = 16.dp)) {
             SegmentedSelector(
-                options = listOf("Essentials", "Wishlist"),
+                options = listOf(stringResource(R.string.essentials), stringResource(R.string.wishlist)),
                 selectedIndex = tab,
                 onSelect = { tab = it }
             )
@@ -59,13 +61,13 @@ fun PlannedScreen(onBackPress: () -> Unit) {
                     AppTextField(
                         value = name,
                         onValueChange = { name = it },
-                        label = if (tab == 0) "Essential item" else "Wish item",
+                        label = if (tab == 0) stringResource(R.string.essential_item) else stringResource(R.string.wish_item),
                         modifier = Modifier.weight(1.4f)
                     )
                     AmountField(
                         value = price,
                         onValueChange = { price = it },
-                        label = "Price",
+                        label = stringResource(R.string.price),
                         placeholder = null,
                         modifier = Modifier.weight(1f)
                     )
@@ -74,8 +76,8 @@ fun PlannedScreen(onBackPress: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.weight(1f)) {
                         SwitchRow(
-                            text = "Reusable",
-                            subtitle = "Stays after purchase",
+                            text = stringResource(R.string.reusable),
+                            subtitle = stringResource(R.string.stays_after_purchase),
                             checked = reusable,
                             onCheckedChange = { reusable = it }
                         )
@@ -95,7 +97,7 @@ fun PlannedScreen(onBackPress: () -> Unit) {
                             }
                         },
                         modifier = Modifier.size(48.dp)
-                    ) { Icon(Icons.Default.Add, contentDescription = "Add") }
+                    ) { Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add)) }
                 }
             }
         }
@@ -108,12 +110,12 @@ fun PlannedScreen(onBackPress: () -> Unit) {
         ) {
             item {
                 SectionTitle(
-                    if (tab == 0) "Essentials (${visible.size})" else "Wishlist (${visible.size})",
-                    trailing = if (total > 0) "Total ${Money.format(total)}" else null
+                    if (tab == 0) stringResource(R.string.essentials_count, visible.size) else stringResource(R.string.wishlist_count, visible.size),
+                    trailing = if (total > 0) stringResource(R.string.total_amount, Money.format(total)) else null
                 )
             }
             if (visible.isEmpty()) {
-                item { EmptyState(if (tab == 0) "No essentials yet" else "Your wishlist is empty") }
+                item { EmptyState(if (tab == 0) stringResource(R.string.no_essentials) else stringResource(R.string.wishlist_empty)) }
             }
             items(visible, key = { it.id }) { item ->
                 AppCard(Modifier.animateItem().fillMaxWidth(), onClick = { editing = item }) {
@@ -130,7 +132,7 @@ fun PlannedScreen(onBackPress: () -> Unit) {
                                     )
                                     Spacer(Modifier.width(4.dp))
                                     Text(
-                                        "Reusable",
+                                        stringResource(R.string.reusable),
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.primary
                                     )
@@ -141,7 +143,7 @@ fun PlannedScreen(onBackPress: () -> Unit) {
                             Text(Money.format(item.price), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         }
                         IconButton(onClick = { deleting = item }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -161,8 +163,8 @@ fun PlannedScreen(onBackPress: () -> Unit) {
     }
     deleting?.let { item ->
         ConfirmDialog(
-            title = "Delete item?",
-            text = "\"${item.name}\" will be removed from the list.",
+            title = stringResource(R.string.delete_item_title),
+            text = stringResource(R.string.removed_from_list, item.name),
             onConfirm = {
                 scope.launch { PlannedItemsDataStore.remove(context, item.id) }
                 deleting = null
@@ -181,19 +183,19 @@ private fun PlannedEditDialog(item: PlannedItem, onDismiss: () -> Unit, onSave: 
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit item") },
+        title = { Text(stringResource(R.string.edit_item)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                AppTextField(value = name, onValueChange = { name = it }, label = "Name")
-                AmountField(value = price, onValueChange = { price = it }, label = "Price (optional)")
+                AppTextField(value = name, onValueChange = { name = it }, label = stringResource(R.string.name))
+                AmountField(value = price, onValueChange = { price = it }, label = stringResource(R.string.price_optional))
                 SegmentedSelector(
-                    options = listOf("Essential", "Wish"),
+                    options = listOf(stringResource(R.string.essential), stringResource(R.string.wish)),
                     selectedIndex = if (isWish) 1 else 0,
                     onSelect = { isWish = it == 1 }
                 )
                 SwitchRow(
-                    text = "Reusable",
-                    subtitle = "Don't remove it after it's used in a spending",
+                    text = stringResource(R.string.reusable),
+                    subtitle = stringResource(R.string.reusable_subtitle),
                     checked = reusable,
                     onCheckedChange = { reusable = it }
                 )
@@ -212,8 +214,8 @@ private fun PlannedEditDialog(item: PlannedItem, onDismiss: () -> Unit, onSave: 
                         )
                     )
                 }
-            ) { Text("Save") }
+            ) { Text(stringResource(R.string.save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }
     )
 }

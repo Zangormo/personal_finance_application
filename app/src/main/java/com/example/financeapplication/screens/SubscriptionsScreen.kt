@@ -1,5 +1,7 @@
 package com.example.financeapplication.screens
 
+import androidx.compose.ui.res.stringResource
+import com.example.financeapplication.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -44,7 +46,7 @@ fun SubscriptionsScreen(onBackPress: () -> Unit) {
             ExtendedFloatingActionButton(
                 onClick = { adding = true },
                 icon = { Icon(Icons.Default.Add, null) },
-                text = { Text("Subscription") }
+                text = { Text(stringResource(R.string.subscription)) }
             )
         }
     ) { padding ->
@@ -53,7 +55,7 @@ fun SubscriptionsScreen(onBackPress: () -> Unit) {
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            ScreenHeader("Subscriptions", onBack = onBackPress)
+            ScreenHeader(stringResource(R.string.subscriptions), onBack = onBackPress)
             if (loadedSubs == null) return@Column
             LazyColumn(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 96.dp),
@@ -62,19 +64,19 @@ fun SubscriptionsScreen(onBackPress: () -> Unit) {
                 item {
                     AppCard(Modifier.fillMaxWidth()) {
                         Row {
-                            StatValue("Per month", Money.format(monthly), Modifier.weight(1f))
-                            StatValue("Per year", Money.format(monthly * 12), Modifier.weight(1f))
-                            StatValue("Active", subs.count { it.active }.toString(), Modifier.weight(0.6f))
+                            StatValue(stringResource(R.string.per_month), Money.format(monthly), Modifier.weight(1f))
+                            StatValue(stringResource(R.string.per_year), Money.format(monthly * 12), Modifier.weight(1f))
+                            StatValue(stringResource(R.string.active), subs.count { it.active }.toString(), Modifier.weight(0.6f))
                         }
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "Payments are charged automatically on their date and appear in History.",
+                            stringResource(R.string.subscriptions_info),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
-                if (subs.isEmpty()) item { EmptyState("No subscriptions yet") }
+                if (subs.isEmpty()) item { EmptyState(stringResource(R.string.no_subscriptions)) }
                 items(sorted, key = { it.id }) { sub ->
                     AppCard(
                         Modifier.animateItem()
@@ -88,7 +90,7 @@ fun SubscriptionsScreen(onBackPress: () -> Unit) {
                             Column(Modifier.weight(1f)) {
                                 Text(sub.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                                 Text(
-                                    if (sub.active) "Next payment: ${Dates.date(sub.nextChargeAt)}" else "Paused",
+                                    if (sub.active) stringResource(R.string.next_payment_on, Dates.date(sub.nextChargeAt)) else stringResource(R.string.paused),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -96,7 +98,7 @@ fun SubscriptionsScreen(onBackPress: () -> Unit) {
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(Money.format(sub.amount), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                                 Text(
-                                    sub.period.label,
+                                    stringResource(sub.period.label),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -135,8 +137,8 @@ fun SubscriptionsScreen(onBackPress: () -> Unit) {
     }
     deleting?.let { sub ->
         ConfirmDialog(
-            title = "Delete subscription?",
-            text = "\"${sub.name}\" will no longer be charged. Past payments stay in History.",
+            title = stringResource(R.string.delete_subscription_title),
+            text = stringResource(R.string.delete_subscription_text, sub.name),
             onConfirm = {
                 scope.launch { SubscriptionsDataStore.remove(context, sub.id) }
                 deleting = null
@@ -170,6 +172,7 @@ private fun SubscriptionDialog(
     onDelete: (() -> Unit)?,
     onSave: (Subscription) -> Unit,
 ) {
+    val context = LocalContext.current
     var name by remember { mutableStateOf(initial?.name.orEmpty()) }
     var amountText by remember { mutableStateOf(initial?.let { Money.toInput(it.amount) }.orEmpty()) }
     var period by remember { mutableStateOf(initial?.period ?: RepeatPeriod.MONTHLY) }
@@ -181,23 +184,23 @@ private fun SubscriptionDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (initial == null) "New subscription" else "Edit subscription") },
+        title = { Text(if (initial == null) stringResource(R.string.new_subscription) else stringResource(R.string.edit_subscription)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                AppTextField(name, { name = it }, "Name", placeholder = "Netflix, gym, ...")
+                AppTextField(name, { name = it }, stringResource(R.string.name), placeholder = stringResource(R.string.subscription_placeholder))
                 AmountField(
                     value = amountText,
                     onValueChange = { amountText = it; error = null },
-                    label = "Amount",
+                    label = stringResource(R.string.amount),
                     isError = error != null,
                     errorText = error
                 )
                 SegmentedSelector(
-                    options = periods.map { it.label },
+                    options = periods.map { stringResource(it.label) },
                     selectedIndex = periods.indexOf(period).coerceAtLeast(0),
                     onSelect = { period = periods[it] }
                 )
-                PickerField(Icons.Default.CalendarMonth, "Next payment", Dates.date(nextDate), onClick = { pickDate = true })
+                PickerField(Icons.Default.CalendarMonth, stringResource(R.string.next_payment), Dates.date(nextDate), onClick = { pickDate = true })
                 NecessitySelector(necessity, { necessity = it })
             }
         },
@@ -207,7 +210,7 @@ private fun SubscriptionDialog(
                 onClick = {
                     val amount = Money.parse(amountText)
                     if (amount == null || amount <= 0f) {
-                        error = "Enter a valid amount"
+                        error = context.getString(R.string.invalid_amount)
                         return@TextButton
                     }
                     val scheduleChanged = initial == null || initial.period != period ||
@@ -224,14 +227,14 @@ private fun SubscriptionDialog(
                         )
                     )
                 }
-            ) { Text("Save") }
+            ) { Text(stringResource(R.string.save)) }
         },
         dismissButton = {
             Row {
                 if (onDelete != null) {
-                    TextButton(onClick = onDelete) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                    TextButton(onClick = onDelete) { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) }
                 }
-                TextButton(onClick = onDismiss) { Text("Cancel") }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
             }
         }
     )

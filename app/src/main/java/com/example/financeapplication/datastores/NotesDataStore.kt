@@ -1,5 +1,7 @@
 package com.example.financeapplication.datastores
 
+import androidx.annotation.StringRes
+import com.example.financeapplication.R
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -36,12 +38,12 @@ enum class NoteStyle { BOLD, ITALIC, UNDERLINE, STRIKE, HIGHLIGHT }
 /** [style] applied to the characters from [start] until [end] (exclusive) of [Note.text]. */
 data class NoteSpan(val style: NoteStyle, val start: Int, val end: Int)
 
-enum class NoteSort(val label: String) {
-    EDITED("Last edited"),
-    CREATED("Date added"),
-    TITLE("Alphabetical"),
-    FILES("With files first"),
-    CUSTOM("Custom order"),
+enum class NoteSort(@StringRes val label: Int) {
+    EDITED(R.string.sort_edited),
+    CREATED(R.string.sort_created),
+    TITLE(R.string.sort_title),
+    FILES(R.string.sort_files),
+    CUSTOM(R.string.sort_custom),
 }
 
 data class Note(

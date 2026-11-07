@@ -1,5 +1,7 @@
 package com.example.financeapplication.ui.components
 
+import androidx.compose.ui.res.stringResource
+import com.example.financeapplication.R
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -54,7 +56,7 @@ fun ScreenHeader(
     ) {
         if (onBack != null) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
             }
         } else {
             Spacer(Modifier.width(12.dp))
@@ -317,10 +319,11 @@ fun necessityColor(level: NecessityLevel?): Color = when (level) {
     else -> NecessaryColor
 }
 
+@Composable
 fun necessityLabel(level: NecessityLevel?): String = when (level) {
-    NecessityLevel.MEDIUM -> "Medium"
-    NecessityLevel.NOT_NEEDED -> "Not needed"
-    else -> "Necessary"
+    NecessityLevel.MEDIUM -> stringResource(R.string.necessity_medium)
+    NecessityLevel.NOT_NEEDED -> stringResource(R.string.necessity_not_needed)
+    else -> stringResource(R.string.necessity_necessary)
 }
 
 @Composable
@@ -382,7 +385,7 @@ fun SwitchRow(text: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit
 fun ConfirmDialog(
     title: String,
     text: String,
-    confirmText: String = "Delete",
+    confirmText: String = stringResource(R.string.delete),
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -393,7 +396,7 @@ fun ConfirmDialog(
         confirmButton = {
             TextButton(onClick = onConfirm) { Text(confirmText, color = MaterialTheme.colorScheme.error) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }
     )
 }
 
@@ -439,7 +442,7 @@ fun PickerField(
                 }
             }
             if (onClear != null && value != null) {
-                IconButton(onClick = onClear) { Icon(Icons.Default.Close, "Clear") }
+                IconButton(onClick = onClear) { Icon(Icons.Default.Close, stringResource(R.string.clear)) }
             }
         }
     }

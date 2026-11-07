@@ -1,5 +1,7 @@
 package com.example.financeapplication.screens
 
+import androidx.compose.ui.res.stringResource
+import com.example.financeapplication.R
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,10 +28,10 @@ fun WelcomeScreen(onContinueClicked: (Float) -> Unit) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Welcome!", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.welcome_title), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(12.dp))
         Text(
-            "Enter your current balance to get started.",
+            stringResource(R.string.welcome_text),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -38,14 +40,14 @@ fun WelcomeScreen(onContinueClicked: (Float) -> Unit) {
         AmountField(
             value = balanceText,
             onValueChange = { balanceText = it; isError = false },
-            label = "Current balance",
+            label = stringResource(R.string.current_balance),
             isError = isError,
-            errorText = "Enter a valid number, e.g. 100,50 or 100.50",
+            errorText = stringResource(R.string.amount_error),
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(24.dp))
         PrimaryButton(
-            text = "Continue",
+            text = stringResource(R.string.continue_text),
             onClick = {
                 val balance = if (balanceText.isBlank()) 0f else Money.parse(balanceText)
                 if (balance != null) onContinueClicked(balance) else isError = true

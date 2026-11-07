@@ -1,5 +1,7 @@
 package com.example.financeapplication.screens
 
+import androidx.compose.ui.res.stringResource
+import com.example.financeapplication.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -63,7 +65,7 @@ fun DebtsScreen(onBackPress: () -> Unit) {
             ExtendedFloatingActionButton(
                 onClick = { adding = true },
                 icon = { Icon(Icons.Default.Add, null) },
-                text = { Text("Debt") }
+                text = { Text(stringResource(R.string.debt)) }
             )
         }
     ) { padding ->
@@ -72,7 +74,7 @@ fun DebtsScreen(onBackPress: () -> Unit) {
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            ScreenHeader("Debts", onBack = onBackPress)
+            ScreenHeader(stringResource(R.string.debts), onBack = onBackPress)
             if (loadedDebts == null) return@Column
             LazyColumn(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 96.dp),
@@ -81,26 +83,26 @@ fun DebtsScreen(onBackPress: () -> Unit) {
                 item {
                     AppCard(Modifier.fillMaxWidth()) {
                         Row {
-                            StatValue("I owe", Money.format(iOwe), Modifier.weight(1f), Negative)
-                            StatValue("Owed to me", Money.format(owedToMe), Modifier.weight(1f), Positive)
+                            StatValue(stringResource(R.string.i_owe), Money.format(iOwe), Modifier.weight(1f), Negative)
+                            StatValue(stringResource(R.string.owed_to_me), Money.format(owedToMe), Modifier.weight(1f), Positive)
                             val net = owedToMe - iOwe
-                            StatValue("Net", Money.formatSigned(net), Modifier.weight(1f), if (net < 0) Negative else Positive)
+                            StatValue(stringResource(R.string.net), Money.formatSigned(net), Modifier.weight(1f), if (net < 0) Negative else Positive)
                         }
                     }
                 }
                 item {
                     SegmentedSelector(
-                        options = listOf("I owe", "Owed to me"),
+                        options = listOf(stringResource(R.string.i_owe), stringResource(R.string.owed_to_me)),
                         selectedIndex = tab,
                         onSelect = { tab = it },
                         selectedColors = listOf(Negative.copy(alpha = 0.85f), Positive.copy(alpha = 0.85f))
                     )
                 }
                 item {
-                    SwitchRow("Show settled", showSettled, { showSettled = it })
+                    SwitchRow(stringResource(R.string.show_settled), showSettled, { showSettled = it })
                 }
                 if (visible.isEmpty()) {
-                    item { EmptyState(if (tab == 0) "You don't owe anyone" else "Nobody owes you") }
+                    item { EmptyState(if (tab == 0) stringResource(R.string.debts_empty_i_owe) else stringResource(R.string.debts_empty_owed)) }
                 }
                 items(visible, key = { it.id }) { debt ->
                     DebtCard(debt, Modifier.animateItem(), onClick = { details = debt }, onRepay = { repaying = debt })
@@ -148,8 +150,8 @@ fun DebtsScreen(onBackPress: () -> Unit) {
 
     deleting?.let { debt ->
         ConfirmDialog(
-            title = "Delete debt?",
-            text = "The record for ${debt.person} will be removed. The balance is not changed.",
+            title = stringResource(R.string.delete_debt_title),
+            text = stringResource(R.string.delete_debt_text, debt.person),
             onConfirm = {
                 scope.launch { DebtsDataStore.remove(context, debt.id) }
                 deleting = null
@@ -207,13 +209,13 @@ private fun DebtCard(debt: Debt, modifier: Modifier, onClick: () -> Unit, onRepa
             Spacer(Modifier.height(6.dp))
             Row {
                 Text(
-                    "Returned ${Money.format(debt.paid)}",
+                    stringResource(R.string.returned_amount, Money.format(debt.paid)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    "of ${Money.format(debt.amount)}",
+                    stringResource(R.string.of_amount, Money.format(debt.amount)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -223,9 +225,9 @@ private fun DebtCard(debt: Debt, modifier: Modifier, onClick: () -> Unit, onRepa
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 when {
-                    debt.isSettled -> "Settled"
-                    debt.dueAt != null -> (if (overdue) "Overdue since " else "Due ") + Dates.date(debt.dueAt)
-                    else -> "Since " + Dates.date(debt.createdAt)
+                    debt.isSettled -> stringResource(R.string.settled)
+                    debt.dueAt != null -> if (overdue) stringResource(R.string.overdue_since, Dates.date(debt.dueAt)) else stringResource(R.string.due_on, Dates.date(debt.dueAt))
+                    else -> stringResource(R.string.since_date, Dates.date(debt.createdAt))
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = if (overdue) Negative else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -233,7 +235,7 @@ private fun DebtCard(debt: Debt, modifier: Modifier, onClick: () -> Unit, onRepa
             )
             if (!debt.isSettled) {
                 Text(
-                    if (debt.direction == DebtDirection.I_OWE) "Pay back" else "Got back",
+                    if (debt.direction == DebtDirection.I_OWE) stringResource(R.string.pay_back) else stringResource(R.string.got_back),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
@@ -273,36 +275,36 @@ private fun DebtDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (initial == null) "New debt" else "Edit debt") },
+        title = { Text(if (initial == null) stringResource(R.string.new_debt) else stringResource(R.string.edit_debt)) },
         text = {
             Column(
                 Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 SegmentedSelector(
-                    options = listOf("I borrowed", "I lent"),
+                    options = listOf(stringResource(R.string.i_borrowed), stringResource(R.string.i_lent)),
                     selectedIndex = if (direction == DebtDirection.I_OWE) 0 else 1,
                     onSelect = { direction = if (it == 0) DebtDirection.I_OWE else DebtDirection.OWED_TO_ME },
                     selectedColors = listOf(Negative.copy(alpha = 0.85f), Positive.copy(alpha = 0.85f))
                 )
-                AppTextField(person, { person = it }, "Person")
+                AppTextField(person, { person = it }, stringResource(R.string.person))
                 AmountField(
                     value = amountText,
                     onValueChange = { amountText = it; error = null },
-                    label = "Amount",
+                    label = stringResource(R.string.amount),
                     isError = error != null,
                     errorText = error
                 )
-                AppTextField(note, { note = it }, "Comment (optional)", singleLine = false)
+                AppTextField(note, { note = it }, stringResource(R.string.comment_optional), singleLine = false)
                 PickerField(
-                    Icons.Default.CalendarMonth, "Due date", dueAt?.let { Dates.date(it) },
-                    onClick = { pickDate = true }, onClear = { dueAt = null }, placeholder = "Due date (optional)"
+                    Icons.Default.CalendarMonth, stringResource(R.string.due_date), dueAt?.let { Dates.date(it) },
+                    onClick = { pickDate = true }, onClear = { dueAt = null }, placeholder = stringResource(R.string.due_date_optional)
                 )
                 if (initial == null) {
                     SwitchRow(
-                        text = "Update balance",
-                        subtitle = if (direction == DebtDirection.I_OWE) "Add the borrowed money to the balance"
-                        else "Take the lent money from the balance",
+                        text = stringResource(R.string.update_balance),
+                        subtitle = if (direction == DebtDirection.I_OWE) stringResource(R.string.update_balance_borrowed)
+                        else stringResource(R.string.update_balance_lent),
                         checked = affectBalance,
                         onCheckedChange = { affectBalance = it }
                     )
@@ -310,12 +312,13 @@ private fun DebtDialog(
             }
         },
         confirmButton = {
+            val invalidAmountText = stringResource(R.string.invalid_amount)
             TextButton(
                 enabled = person.isNotBlank(),
                 onClick = {
                     val amount = Money.parse(amountText)
                     if (amount == null || amount <= 0f) {
-                        error = "Enter a valid amount"
+                        error = invalidAmountText
                         return@TextButton
                     }
                     val base = initial ?: Debt(person = "", amount = 0f, direction = direction)
@@ -330,9 +333,9 @@ private fun DebtDialog(
                         affectBalance
                     )
                 }
-            ) { Text("Save") }
+            ) { Text(stringResource(R.string.save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }
     )
 
     if (pickDate) {
@@ -349,36 +352,38 @@ private fun RepayDialog(debt: Debt, onDismiss: () -> Unit, onConfirm: (Float, Bo
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (iOwe) "Pay back ${debt.person}" else "Got back from ${debt.person}") },
+        title = { Text(if (iOwe) stringResource(R.string.pay_back_to, debt.person) else stringResource(R.string.got_back_from, debt.person)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Remaining: ${Money.format(debt.remaining)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.remaining_amount, Money.format(debt.remaining)), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 AmountField(
                     value = amountText,
                     onValueChange = { amountText = it; error = null },
-                    label = "Amount",
+                    label = stringResource(R.string.amount),
                     isError = error != null,
                     errorText = error
                 )
                 SwitchRow(
-                    text = "Update balance",
-                    subtitle = if (iOwe) "Subtract from the balance" else "Add to the balance",
+                    text = stringResource(R.string.update_balance),
+                    subtitle = if (iOwe) stringResource(R.string.subtract_from_balance) else stringResource(R.string.add_to_balance),
                     checked = affectBalance,
                     onCheckedChange = { affectBalance = it }
                 )
             }
         },
         confirmButton = {
+            val invalidAmountText = stringResource(R.string.invalid_amount)
+            val moreThanText = stringResource(R.string.more_than_remaining, Money.format(debt.remaining))
             TextButton(onClick = {
                 val amount = Money.parse(amountText)
                 when {
-                    amount == null || amount <= 0f -> error = "Enter a valid amount"
-                    amount > debt.remaining + 0.001f -> error = "More than the remaining ${Money.format(debt.remaining)}"
+                    amount == null || amount <= 0f -> error = invalidAmountText
+                    amount > debt.remaining + 0.001f -> error = moreThanText
                     else -> onConfirm(amount, affectBalance)
                 }
-            }) { Text("Save") }
+            }) { Text(stringResource(R.string.save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }
     )
 }
 
@@ -399,18 +404,18 @@ private fun DebtDetailsDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 val color = if (debt.direction == DebtDirection.I_OWE) Negative else Positive
-                DetailRow("Type", if (debt.direction == DebtDirection.I_OWE) "I borrowed" else "I lent")
-                DetailRow("Amount", Money.format(debt.amount))
-                DetailRow("Remaining", Money.format(debt.remaining), color)
-                DetailRow("Created", Dates.date(debt.createdAt))
-                debt.dueAt?.let { DetailRow("Due", Dates.date(it)) }
+                DetailRow(stringResource(R.string.type), if (debt.direction == DebtDirection.I_OWE) stringResource(R.string.i_borrowed) else stringResource(R.string.i_lent))
+                DetailRow(stringResource(R.string.amount), Money.format(debt.amount))
+                DetailRow(stringResource(R.string.remaining), Money.format(debt.remaining), color)
+                DetailRow(stringResource(R.string.created), Dates.date(debt.createdAt))
+                debt.dueAt?.let { DetailRow(stringResource(R.string.due), Dates.date(it)) }
                 if (!debt.note.isNullOrBlank()) {
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     Text(debt.note)
                 }
                 if (debt.payments.orEmpty().isNotEmpty()) {
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    Text("Payments", fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.payments), fontWeight = FontWeight.SemiBold)
                     debt.payments.orEmpty().sortedByDescending { it.timestamp }.forEach {
                         DetailRow(Dates.dateTime(it.timestamp), Money.format(it.amount))
                     }
@@ -418,12 +423,12 @@ private fun DebtDetailsDialog(
             }
         },
         confirmButton = {
-            if (!debt.isSettled) TextButton(onClick = onRepay) { Text(if (debt.direction == DebtDirection.I_OWE) "Pay back" else "Got back") }
+            if (!debt.isSettled) TextButton(onClick = onRepay) { Text(if (debt.direction == DebtDirection.I_OWE) stringResource(R.string.pay_back) else stringResource(R.string.got_back)) }
         },
         dismissButton = {
             Row {
-                TextButton(onClick = onDelete) { Text("Delete", color = MaterialTheme.colorScheme.error) }
-                TextButton(onClick = onEdit) { Text("Edit") }
+                TextButton(onClick = onDelete) { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) }
+                TextButton(onClick = onEdit) { Text(stringResource(R.string.edit)) }
             }
         }
     )

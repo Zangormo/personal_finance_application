@@ -1,5 +1,7 @@
 package com.example.financeapplication.screens
 
+import androidx.compose.ui.res.stringResource
+import com.example.financeapplication.R
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -43,10 +45,10 @@ fun TransactionScreen(initialIsIncome: Boolean, onBackPress: () -> Unit) {
             .fillMaxSize()
             .imePadding()
     ) {
-        ScreenHeader(title = if (isIncome) "Add income" else "Add spending", onBack = onBackPress)
+        ScreenHeader(title = if (isIncome) stringResource(R.string.add_income) else stringResource(R.string.add_spending), onBack = onBackPress)
         Column(Modifier.padding(horizontal = 16.dp)) {
             SegmentedSelector(
-                options = listOf("Spending", "Income"),
+                options = listOf(stringResource(R.string.spending), stringResource(R.string.income)),
                 selectedIndex = if (isIncome) 1 else 0,
                 onSelect = { isIncome = it == 1 },
                 selectedColors = listOf(Negative.copy(alpha = 0.85f), Positive.copy(alpha = 0.85f))
@@ -56,8 +58,8 @@ fun TransactionScreen(initialIsIncome: Boolean, onBackPress: () -> Unit) {
                     .fillMaxWidth()
                     .padding(vertical = 12.dp)
             ) {
-                StatValue("Balance", Money.format(balance), Modifier.weight(1f), if (balance < 0) Negative else Color.Unspecified)
-                StatValue("Savings", Money.format(savings), Modifier.weight(1f))
+                StatValue(stringResource(R.string.balance), Money.format(balance), Modifier.weight(1f), if (balance < 0) Negative else Color.Unspecified)
+                StatValue(stringResource(R.string.savings), Money.format(savings), Modifier.weight(1f))
             }
         }
         AnimatedContent(
@@ -99,26 +101,26 @@ private fun ColumnScope.IncomeForm(onDone: () -> Unit) {
         AmountField(
             value = amountText,
             onValueChange = { amountText = it; error = null },
-            label = "Income amount",
+            label = stringResource(R.string.income_amount),
             isError = error != null,
             errorText = error
         )
         AppTextField(
             value = description,
             onValueChange = { description = it },
-            label = "Description",
-            placeholder = "Salary, bonus, ..."
+            label = stringResource(R.string.description),
+            placeholder = stringResource(R.string.income_placeholder)
         )
     }
     PrimaryButton(
-        text = "Add income",
+        text = stringResource(R.string.add_income),
         containerColor = Positive.copy(alpha = 0.9f),
         modifier = Modifier.padding(16.dp),
         onClick = {
             val amount = Money.parse(amountText)
             when {
-                amount == null -> error = "Enter a valid amount, e.g. 100,50 or 100.50"
-                amount <= 0f -> error = "Amount must be greater than 0"
+                amount == null -> error = context.getString(R.string.amount_error)
+                amount <= 0f -> error = context.getString(R.string.amount_positive)
                 else -> scope.launch {
                     IncomeDataStore.addIncome(context, amount, description.trim())
                     UserPreferencesDataStore.updateBalance(context, amount)
@@ -183,17 +185,17 @@ private fun ColumnScope.SpendingForm(balance: Float, savings: Float, onDone: () 
                     amountEditedManually = it.isNotEmpty()
                     error = null
                 },
-                label = "Amount spent",
+                label = stringResource(R.string.amount_spent),
                 isError = error != null,
                 errorText = error
             )
         }
         item {
-            AppTextField(value = note, onValueChange = { note = it }, label = "What for? (optional)")
+            AppTextField(value = note, onValueChange = { note = it }, label = stringResource(R.string.what_for_optional))
         }
         item {
             Text(
-                "Necessity",
+                stringResource(R.string.necessity),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
@@ -202,7 +204,7 @@ private fun ColumnScope.SpendingForm(balance: Float, savings: Float, onDone: () 
         }
 
         if (essentials.isNotEmpty()) {
-            item { SectionTitle("Essentials") }
+            item { SectionTitle(stringResource(R.string.essentials)) }
             items(essentials, key = { it.id }) { item ->
                 SelectablePlannedRow(item, item.id in selectedIds) { sel ->
                     selectedIds = if (sel) selectedIds + item.id else selectedIds - item.id
@@ -210,7 +212,7 @@ private fun ColumnScope.SpendingForm(balance: Float, savings: Float, onDone: () 
             }
         }
         if (wishes.isNotEmpty()) {
-            item { SectionTitle("Wishlist") }
+            item { SectionTitle(stringResource(R.string.wishlist)) }
             items(wishes, key = { it.id }) { item ->
                 SelectablePlannedRow(item, item.id in selectedIds) { sel ->
                     selectedIds = if (sel) selectedIds + item.id else selectedIds - item.id
@@ -220,7 +222,7 @@ private fun ColumnScope.SpendingForm(balance: Float, savings: Float, onDone: () 
         if (planned.isEmpty()) {
             item {
                 Text(
-                    "Tip: add essentials and wishlist items in \"Planned\" to pick them here.",
+                    stringResource(R.string.planned_tip),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 12.dp)
@@ -230,14 +232,14 @@ private fun ColumnScope.SpendingForm(balance: Float, savings: Float, onDone: () 
     }
 
     PrimaryButton(
-        text = "Add spending",
+        text = stringResource(R.string.add_spending),
         containerColor = Negative.copy(alpha = 0.9f),
         modifier = Modifier.padding(16.dp),
         onClick = {
             val amount = Money.parse(amountText)
             when {
-                amount == null -> error = "Enter a valid amount, e.g. 100,50 or 100.50"
-                amount <= 0f -> error = "Amount must be greater than 0"
+                amount == null -> error = context.getString(R.string.amount_error)
+                amount <= 0f -> error = context.getString(R.string.amount_positive)
                 amount > balance -> pendingAmount = amount
                 else -> save(amount, 0f)
             }
@@ -249,26 +251,26 @@ private fun ColumnScope.SpendingForm(balance: Float, savings: Float, onDone: () 
         val canCover = savings >= deficit
         AlertDialog(
             onDismissRequest = { pendingAmount = null },
-            title = { Text("Not enough balance") },
+            title = { Text(stringResource(R.string.not_enough_balance)) },
             text = {
                 Text(
-                    "This spending is ${Money.format(amount)}, but the balance is ${Money.format(balance)}." +
-                        if (canCover) "\n\nWithdraw ${Money.format(deficit)} from savings (${Money.format(savings)} available)?"
-                        else "\n\nSavings (${Money.format(savings)}) are not enough to cover it. The balance will go negative."
+                    stringResource(R.string.not_enough_text, Money.format(amount), Money.format(balance)) +
+                        if (canCover) "\n\n" + stringResource(R.string.withdraw_question, Money.format(deficit), Money.format(savings))
+                        else "\n\n" + stringResource(R.string.savings_not_enough, Money.format(savings))
                 )
             },
             confirmButton = {
                 if (canCover) {
                     TextButton(onClick = { pendingAmount = null; save(amount, deficit) }) {
-                        Text("Withdraw & spend")
+                        Text(stringResource(R.string.withdraw_and_spend))
                     }
                 }
             },
             dismissButton = {
                 Row {
-                    TextButton(onClick = { pendingAmount = null }) { Text("Cancel") }
+                    TextButton(onClick = { pendingAmount = null }) { Text(stringResource(R.string.cancel)) }
                     TextButton(onClick = { pendingAmount = null; save(amount, 0f) }) {
-                        Text("Spend anyway", color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.spend_anyway), color = MaterialTheme.colorScheme.error)
                     }
                 }
             }
@@ -317,7 +319,7 @@ private fun SelectablePlannedRow(item: PlannedItem, selected: Boolean, onChange:
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
-                        "Reusable – stays in the list",
+                        stringResource(R.string.reusable_stays),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

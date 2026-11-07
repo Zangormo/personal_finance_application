@@ -63,10 +63,10 @@ object Money {
 }
 
 object Dates {
-    private val date = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
-    private val dateTime = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
-    private val time = SimpleDateFormat("HH:mm", Locale.getDefault())
-    private val dayHeader = SimpleDateFormat("EEEE, d MMMM yyyy", Locale.getDefault())
+    private val date get() = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+    private val dateTime get() = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
+    private val time get() = SimpleDateFormat("HH:mm", Locale.getDefault())
+    private val dayHeader get() = SimpleDateFormat("EEEE, d MMMM yyyy", Locale.getDefault())
 
     fun date(ts: Long): String = date.format(Date(ts))
     fun dateTime(ts: Long): String = dateTime.format(Date(ts))

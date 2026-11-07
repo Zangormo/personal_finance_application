@@ -1,5 +1,7 @@
 package com.example.financeapplication.screens
 
+import androidx.compose.ui.res.stringResource
+import com.example.financeapplication.R
 import android.util.Patterns
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -269,14 +271,14 @@ internal fun FormatToolbar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            FormatButton(Icons.Default.FormatBold, "Bold", isActive(NoteStyle.BOLD)) { onToggle(NoteStyle.BOLD) }
-            FormatButton(Icons.Default.FormatItalic, "Italic", isActive(NoteStyle.ITALIC)) { onToggle(NoteStyle.ITALIC) }
-            FormatButton(Icons.Default.FormatUnderlined, "Underline", isActive(NoteStyle.UNDERLINE)) { onToggle(NoteStyle.UNDERLINE) }
-            FormatButton(Icons.Default.FormatStrikethrough, "Strike-through", isActive(NoteStyle.STRIKE)) { onToggle(NoteStyle.STRIKE) }
-            FormatButton(Icons.Default.BorderColor, "Highlight", isActive(NoteStyle.HIGHLIGHT)) { onToggle(NoteStyle.HIGHLIGHT) }
+            FormatButton(Icons.Default.FormatBold, stringResource(R.string.format_bold), isActive(NoteStyle.BOLD)) { onToggle(NoteStyle.BOLD) }
+            FormatButton(Icons.Default.FormatItalic, stringResource(R.string.format_italic), isActive(NoteStyle.ITALIC)) { onToggle(NoteStyle.ITALIC) }
+            FormatButton(Icons.Default.FormatUnderlined, stringResource(R.string.format_underline), isActive(NoteStyle.UNDERLINE)) { onToggle(NoteStyle.UNDERLINE) }
+            FormatButton(Icons.Default.FormatStrikethrough, stringResource(R.string.format_strike), isActive(NoteStyle.STRIKE)) { onToggle(NoteStyle.STRIKE) }
+            FormatButton(Icons.Default.BorderColor, stringResource(R.string.format_highlight), isActive(NoteStyle.HIGHLIGHT)) { onToggle(NoteStyle.HIGHLIGHT) }
             VerticalDivider(Modifier.height(24.dp).padding(horizontal = 4.dp))
-            FormatButton(Icons.AutoMirrored.Filled.FormatListBulleted, "Bulleted list", bulletsActive, onBullets)
-            FormatButton(Icons.Default.FormatClear, "Clear formatting", false, onClear)
+            FormatButton(Icons.AutoMirrored.Filled.FormatListBulleted, stringResource(R.string.format_bullets), bulletsActive, onBullets)
+            FormatButton(Icons.Default.FormatClear, stringResource(R.string.format_clear), false, onClear)
         }
     }
 }

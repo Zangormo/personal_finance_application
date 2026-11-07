@@ -1,5 +1,7 @@
 package com.example.financeapplication.ui.components
 
+import androidx.compose.ui.res.stringResource
+import com.example.financeapplication.R
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -49,9 +51,9 @@ fun AppDatePickerDialog(
             TextButton(onClick = {
                 state.selectedDateMillis?.let { onPick(utcDayToLocal(it, initial)) }
                 onDismiss()
-            }) { Text("OK") }
+            }) { Text(stringResource(android.R.string.ok)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }
     ) {
         DatePicker(state = state)
     }
@@ -87,8 +89,8 @@ fun AppTimePickerDialog(
                 }.timeInMillis
                 onPick(result)
                 onDismiss()
-            }) { Text("OK") }
+            }) { Text(stringResource(android.R.string.ok)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }
     )
 }

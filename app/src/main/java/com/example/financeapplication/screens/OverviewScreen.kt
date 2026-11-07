@@ -1,5 +1,7 @@
 package com.example.financeapplication.screens
 
+import androidx.compose.ui.res.stringResource
+import com.example.financeapplication.R
 import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -63,7 +65,7 @@ fun OverviewScreen(onBackPress: () -> Unit = {}) {
     var selectedMonth by remember { mutableIntStateOf(Calendar.getInstance().get(Calendar.MONTH)) }
 
     Column(Modifier.fillMaxSize()) {
-    ScreenHeader("Overview", onBack = onBackPress)
+    ScreenHeader(stringResource(R.string.overview), onBack = onBackPress)
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -87,7 +89,7 @@ fun OverviewScreen(onBackPress: () -> Unit = {}) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Overall Balance",
+                    text = stringResource(R.string.overall_balance),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.placeholderText
                 )
@@ -114,7 +116,7 @@ fun OverviewScreen(onBackPress: () -> Unit = {}) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Balance",
+                    text = stringResource(R.string.balance),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.placeholderText
                 )
@@ -141,7 +143,7 @@ fun OverviewScreen(onBackPress: () -> Unit = {}) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Savings Balance",
+                    text = stringResource(R.string.savings_balance),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.placeholderText
                 )
@@ -168,7 +170,7 @@ fun OverviewScreen(onBackPress: () -> Unit = {}) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Wishlist Total",
+                    text = stringResource(R.string.wishlist_total),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.placeholderText
                 )
@@ -182,7 +184,7 @@ fun OverviewScreen(onBackPress: () -> Unit = {}) {
 
         // Period selection
         Text(
-            text = "Period Overview",
+            text = stringResource(R.string.period_overview),
             style = MaterialTheme.typography.titleLarge,
             color = colors.primaryText,
             modifier = Modifier.padding(bottom = 12.dp)
@@ -191,7 +193,7 @@ fun OverviewScreen(onBackPress: () -> Unit = {}) {
         // Period buttons
         val periods = listOf(PeriodType.WEEK, PeriodType.MONTH, PeriodType.YEAR)
         com.example.financeapplication.ui.components.SegmentedSelector(
-            options = listOf("7 Days", "Month", "Year"),
+            options = listOf(stringResource(R.string.period_7_days), stringResource(R.string.period_month), stringResource(R.string.period_year)),
             selectedIndex = periods.indexOf(selectedPeriod),
             onSelect = { selectedPeriod = periods[it] },
             modifier = Modifier.padding(bottom = 16.dp)
@@ -262,19 +264,19 @@ fun OverviewScreen(onBackPress: () -> Unit = {}) {
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         LegendItem(
-                            label = "Necessary",
+                            label = stringResource(R.string.necessity_necessary),
                             amount = necessaryTotal,
                             color = NecessaryColor,
                             total = grandTotal
                         )
                         LegendItem(
-                            label = "Medium",
+                            label = stringResource(R.string.necessity_medium),
                             amount = mediumTotal,
                             color = MediumColor,
                             total = grandTotal
                         )
                         LegendItem(
-                            label = "Not Needed",
+                            label = stringResource(R.string.necessity_not_needed),
                             amount = notNeededTotal,
                             color = NotNeededColor,
                             total = grandTotal
@@ -297,7 +299,7 @@ fun OverviewScreen(onBackPress: () -> Unit = {}) {
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No spendings in this period",
+                        text = stringResource(R.string.no_spendings_in_period),
                         style = MaterialTheme.typography.bodyLarge,
                         color = colors.placeholderText,
                         textAlign = TextAlign.Center
@@ -320,7 +322,7 @@ fun OverviewScreen(onBackPress: () -> Unit = {}) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Total Spending",
+                        text = stringResource(R.string.total_spending),
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.placeholderText
                     )
@@ -356,7 +358,7 @@ fun OverviewScreen(onBackPress: () -> Unit = {}) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Total Income",
+                    text = stringResource(R.string.total_income),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.placeholderText
                 )
@@ -410,10 +412,11 @@ fun MonthYearSelector(
     colors: com.example.financeapplication.ui.theme.AppColors,
     modifier: Modifier = Modifier
 ) {
-    val months = listOf(
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-    )
+    // Month names in the app language, nominative form ("Январь", not "января")
+    val months = java.time.Month.entries.map {
+        it.getDisplayName(java.time.format.TextStyle.FULL_STANDALONE, java.util.Locale.getDefault())
+            .replaceFirstChar { c -> c.uppercase() }
+    }
 
     Row(
         modifier = modifier.fillMaxWidth(),

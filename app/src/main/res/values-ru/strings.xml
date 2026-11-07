@@ -1,0 +1,310 @@
+<resources>
+    <!-- Common -->
+    <string name="add">Добавить</string>
+    <string name="back">Назад</string>
+    <string name="cancel">Отмена</string>
+    <string name="clear">Очистить</string>
+    <string name="close">Закрыть</string>
+    <string name="continue_text">Продолжить</string>
+    <string name="delete">Удалить</string>
+    <string name="done">Готово</string>
+    <string name="edit">Изменить</string>
+    <string name="more">Ещё</string>
+    <string name="remove">Убрать</string>
+    <string name="save">Сохранить</string>
+    <string name="search">Поиск</string>
+    <string name="sort">Сортировка</string>
+    <string name="nothing_found">Ничего не найдено</string>
+    <string name="empty">Пусто</string>
+    <string name="all">Все</string>
+    <string name="all_done">Всё сделано</string>
+    <string name="none_yet">Пока нет</string>
+    <string name="name">Название</string>
+    <string name="name_optional">Название (необязательно)</string>
+    <string name="title">Заголовок</string>
+    <string name="untitled">Без названия</string>
+    <string name="amount">Сумма</string>
+    <string name="description">Описание</string>
+    <string name="date">Дата</string>
+    <string name="date_optional">Дата (необязательно)</string>
+    <string name="time">Время</string>
+    <string name="time_optional">Время (необязательно)</string>
+    <string name="comment_optional">Комментарий (необязательно)</string>
+    <string name="type">Тип</string>
+    <string name="created">Создано</string>
+    <string name="total">Всего</string>
+    <string name="total_amount">Всего %1$s</string>
+    <string name="amount_error">Введите число, например 100,50 или 100.50</string>
+    <string name="invalid_amount">Введите корректную сумму</string>
+    <string name="amount_positive">Сумма должна быть больше 0</string>
+    <string name="will_be_deleted">«%1$s» будет удалено.</string>
+    <string name="no_browser">Браузер не найден</string>
+
+    <!-- Necessity -->
+    <string name="necessity">Необходимость</string>
+    <string name="necessity_necessary">Необходимо</string>
+    <string name="necessity_medium">Средне</string>
+    <string name="necessity_not_needed">Не нужно</string>
+
+    <!-- Periods -->
+    <string name="period_daily">Ежедневно</string>
+    <string name="period_weekly">Еженедельно</string>
+    <string name="period_monthly">Ежемесячно</string>
+    <string name="period_yearly">Ежегодно</string>
+
+    <!-- Welcome -->
+    <string name="welcome_title">Добро пожаловать!</string>
+    <string name="welcome_text">Введите текущий баланс, чтобы начать.</string>
+    <string name="current_balance">Текущий баланс</string>
+
+    <!-- Menu / settings -->
+    <string name="menu">Меню</string>
+    <string name="home">Главная</string>
+    <string name="settings">Настройки</string>
+    <string name="language">Язык</string>
+    <string name="language_system">Системный</string>
+    <string name="developers_page">Страница разработчика</string>
+    <string name="secret_notes">Секретные записки</string>
+    <string name="no_secret_notes">Секретных записок нет.</string>
+
+    <!-- Home -->
+    <string name="home_edit">Настроить главный экран</string>
+    <string name="home_edit_hint">Перетаскивайте плитки · кнопка в углу меняет размер баланса</string>
+    <string name="balance">Баланс</string>
+    <string name="balance_resize">Изменить размер</string>
+    <string name="savings">Сбережения</string>
+    <string name="spent_this_month">Потрачено за месяц</string>
+    <string name="spending">Расход</string>
+    <string name="income">Доход</string>
+    <string name="history">История</string>
+    <string name="history_subtitle">Расходы и доходы</string>
+    <string name="planned">Планы</string>
+    <string name="planned_subtitle">Необходимое и желания</string>
+    <string name="overview">Обзор</string>
+    <string name="overview_subtitle">Статистика за период</string>
+    <string name="subscriptions">Подписки</string>
+    <string name="subscriptions_next">Следующая: %1$s, %2$s</string>
+    <string name="debts">Долги</string>
+    <string name="debts_both">Должен %1$s · Мне должны %2$s</string>
+    <string name="debts_i_owe_amount">Я должен %1$s</string>
+    <string name="debts_owed_amount">Мне должны %1$s</string>
+    <string name="no_debts">Долгов нет</string>
+    <string name="todo">Задачи</string>
+    <string name="notes">Записки</string>
+    <string name="no_notes_yet">Записок пока нет</string>
+    <plurals name="open_tasks">
+        <item quantity="one">%d открытая задача</item>
+        <item quantity="few">%d открытые задачи</item>
+        <item quantity="many">%d открытых задач</item>
+        <item quantity="other">%d открытой задачи</item>
+    </plurals>
+    <plurals name="notes_count">
+        <item quantity="one">%d записка</item>
+        <item quantity="few">%d записки</item>
+        <item quantity="many">%d записок</item>
+        <item quantity="other">%d записки</item>
+    </plurals>
+
+    <!-- Transactions -->
+    <string name="add_income">Добавить доход</string>
+    <string name="add_spending">Добавить расход</string>
+    <string name="income_amount">Сумма дохода</string>
+    <string name="income_placeholder">Зарплата, премия, …</string>
+    <string name="amount_spent">Потраченная сумма</string>
+    <string name="what_for_optional">На что? (необязательно)</string>
+    <string name="essentials">Необходимое</string>
+    <string name="wishlist">Желания</string>
+    <string name="planned_tip">Совет: добавьте необходимое и желания в «Планах», чтобы выбирать их здесь.</string>
+    <string name="not_enough_balance">Недостаточно средств</string>
+    <string name="not_enough_text">Расход составляет %1$s, а баланс — %2$s.</string>
+    <string name="withdraw_question">Снять %1$s со сбережений (доступно %2$s)?</string>
+    <string name="savings_not_enough">Сбережений (%1$s) не хватит. Баланс станет отрицательным.</string>
+    <string name="withdraw_and_spend">Снять и потратить</string>
+    <string name="spend_anyway">Всё равно потратить</string>
+    <string name="reusable_stays">Многоразовое — остаётся в списке</string>
+
+    <!-- History -->
+    <string name="no_records">Записей пока нет</string>
+    <string name="delete_record_title">Удалить запись?</string>
+    <string name="delete_record_text">Баланс будет скорректирован на %1$s.</string>
+    <string name="subscription_lower">подписка</string>
+    <string name="items">Покупки</string>
+    <string name="source">Источник</string>
+    <string name="subscription_automatic">Подписка (автоматически)</string>
+    <string name="edit_income">Изменить доход</string>
+    <string name="edit_spending">Изменить расход</string>
+
+    <!-- Planned -->
+    <string name="essential_item">Необходимая покупка</string>
+    <string name="wish_item">Желание</string>
+    <string name="price">Цена</string>
+    <string name="price_optional">Цена (необязательно)</string>
+    <string name="reusable">Многоразовое</string>
+    <string name="stays_after_purchase">Остаётся после покупки</string>
+    <string name="essentials_count">Необходимое (%1$d)</string>
+    <string name="wishlist_count">Желания (%1$d)</string>
+    <string name="no_essentials">Необходимых покупок пока нет</string>
+    <string name="wishlist_empty">Список желаний пуст</string>
+    <string name="delete_item_title">Удалить пункт?</string>
+    <string name="removed_from_list">«%1$s» будет удалено из списка.</string>
+    <string name="edit_item">Изменить пункт</string>
+    <string name="essential">Необходимое</string>
+    <string name="wish">Желание</string>
+    <string name="reusable_subtitle">Не удалять после использования в расходе</string>
+
+    <!-- Savings -->
+    <string name="save_money">Отложить</string>
+    <string name="withdraw">Снять</string>
+    <string name="amount_to_save">Сумма, чтобы отложить</string>
+    <string name="amount_to_withdraw">Сумма для снятия</string>
+    <string name="use_all">Всё: %1$s</string>
+    <string name="add_to_savings">Отложить в сбережения</string>
+    <string name="withdraw_from_savings">Снять со сбережений</string>
+    <string name="exceeds_balance">Сумма не может превышать баланс (%1$s)</string>
+    <string name="exceeds_savings">Сумма не может превышать сбережения (%1$s)</string>
+
+    <!-- Overview -->
+    <string name="overall_balance">Общий баланс</string>
+    <string name="savings_balance">Сбережения</string>
+    <string name="wishlist_total">Сумма желаний</string>
+    <string name="period_overview">Обзор за период</string>
+    <string name="period_7_days">7 дней</string>
+    <string name="period_month">Месяц</string>
+    <string name="period_year">Год</string>
+    <string name="no_spendings_in_period">За этот период расходов нет</string>
+    <string name="total_spending">Всего расходов</string>
+    <string name="total_income">Всего доходов</string>
+
+    <!-- Subscriptions -->
+    <string name="subscription">Подписка</string>
+    <string name="per_month">В месяц</string>
+    <string name="per_year">В год</string>
+    <string name="active">Активных</string>
+    <string name="subscriptions_info">Платежи списываются автоматически в день оплаты и появляются в Истории.</string>
+    <string name="no_subscriptions">Подписок пока нет</string>
+    <string name="next_payment">Следующий платёж</string>
+    <string name="next_payment_on">Следующий платёж: %1$s</string>
+    <string name="paused">Приостановлена</string>
+    <string name="delete_subscription_title">Удалить подписку?</string>
+    <string name="delete_subscription_text">«%1$s» больше не будет списываться. Прошлые платежи останутся в Истории.</string>
+    <string name="new_subscription">Новая подписка</string>
+    <string name="edit_subscription">Изменить подписку</string>
+    <string name="subscription_placeholder">Netflix, спортзал, …</string>
+
+    <!-- Debts -->
+    <string name="debt">Долг</string>
+    <string name="i_owe">Я должен</string>
+    <string name="owed_to_me">Мне должны</string>
+    <string name="net">Итог</string>
+    <string name="show_settled">Показывать закрытые</string>
+    <string name="debts_empty_i_owe">Вы никому не должны</string>
+    <string name="debts_empty_owed">Вам никто не должен</string>
+    <string name="delete_debt_title">Удалить долг?</string>
+    <string name="delete_debt_text">Запись о долге (%1$s) будет удалена. Баланс не изменится.</string>
+    <string name="returned_amount">Возвращено %1$s</string>
+    <string name="of_amount">из %1$s</string>
+    <string name="settled">Закрыт</string>
+    <string name="overdue_since">Просрочен с %1$s</string>
+    <string name="due_on">До %1$s</string>
+    <string name="since_date">С %1$s</string>
+    <string name="pay_back">Вернуть</string>
+    <string name="got_back">Получено</string>
+    <string name="new_debt">Новый долг</string>
+    <string name="edit_debt">Изменить долг</string>
+    <string name="i_borrowed">Я занял</string>
+    <string name="i_lent">Я одолжил</string>
+    <string name="person">Человек</string>
+    <string name="due_date">Срок</string>
+    <string name="due_date_optional">Срок (необязательно)</string>
+    <string name="update_balance">Изменить баланс</string>
+    <string name="update_balance_borrowed">Добавить занятые деньги к балансу</string>
+    <string name="update_balance_lent">Вычесть одолженные деньги из баланса</string>
+    <string name="pay_back_to">Вернуть: %1$s</string>
+    <string name="got_back_from">Получено от: %1$s</string>
+    <string name="remaining">Осталось</string>
+    <string name="remaining_amount">Осталось: %1$s</string>
+    <string name="subtract_from_balance">Вычесть из баланса</string>
+    <string name="add_to_balance">Добавить к балансу</string>
+    <string name="more_than_remaining">Больше остатка (%1$s)</string>
+    <string name="due">Срок</string>
+    <string name="payments">Платежи</string>
+
+    <!-- To-do -->
+    <string name="todo_categories_hint">Зажмите категорию, чтобы изменить</string>
+    <string name="todo_categories_edit_hint">Перетаскивайте плитки · нажмите, чтобы переименовать</string>
+    <string name="uncategorized">Без категории</string>
+    <string name="new_category">Новая категория</string>
+    <string name="rename_category">Переименовать категорию</string>
+    <string name="delete_category_title">Удалить «%1$s»?</string>
+    <string name="delete_category_text">Её задачи будут перенесены в «Без категории».</string>
+    <string name="open_count">Открыто: %1$d</string>
+    <string name="done_count">выполнено: %1$d</string>
+    <string name="task">Задача</string>
+    <string name="todo_tasks_hint">Нажмите, чтобы отметить · зажмите, чтобы изменить</string>
+    <string name="todo_tasks_edit_hint">Нажмите на задачу, чтобы изменить её</string>
+    <string name="todo_empty">Задач пока нет. Нажмите «Задача», чтобы добавить.</string>
+    <string name="everything_done">Всё сделано 🎉</string>
+    <string name="completed_count">Выполненные (%1$d)</string>
+    <string name="delete_task_title">Удалить задачу?</string>
+    <string name="resets_daily">сбрасывается в полночь</string>
+    <string name="resets_weekly">сбрасывается в понедельник</string>
+    <string name="resets_monthly">сбрасывается 1-го числа</string>
+    <string name="resets_yearly">сбрасывается 1 января</string>
+    <string name="period_word_daily">сегодня</string>
+    <string name="period_word_weekly">на этой неделе</string>
+    <string name="period_word_monthly">в этом месяце</string>
+    <string name="period_word_yearly">в этом году</string>
+    <string name="done_in_period">✓ Сделано %1$s · %2$s</string>
+    <string name="open_comment">Открыть комментарий</string>
+    <string name="new_task">Новая задача</string>
+    <string name="edit_task">Изменить задачу</string>
+    <string name="repeat">Повтор</string>
+    <string name="repeat_once">Раз</string>
+    <string name="repeat_day">День</string>
+    <string name="repeat_week">Неделя</string>
+    <string name="repeat_month">Месяц</string>
+    <string name="repeat_year">Год</string>
+    <string name="can_be_checked_once">Можно отметить один раз %1$s; %2$s</string>
+    <string name="at_midnight_suffix">" в 00:00."</string>
+
+    <!-- Notes -->
+    <string name="note">Записка</string>
+    <string name="notes_hint">Зажмите записку, чтобы переместить или настроить её</string>
+    <string name="notes_edit_hint">Перетаскивайте записки · нажмите, чтобы настроить</string>
+    <string name="notes_edit_hint_search">Очистите поиск, чтобы менять порядок · нажмите, чтобы настроить</string>
+    <string name="notes_empty">Записок пока нет. Нажмите «Записка», чтобы создать.</string>
+    <string name="secret">Секретная</string>
+    <string name="secret_note">Секретная записка</string>
+    <string name="secret_note_subtitle">Скрыта из списка. Появляется, только если ввести в поиск её точное название.</string>
+    <string name="secret_note_no_title">У записки нет названия, поэтому её не найти. Дайте ей название, чтобы её можно было открыть.</string>
+    <string name="configure_note">Настроить записку</string>
+    <string name="sort_edited">Последние изменённые</string>
+    <string name="sort_created">По дате добавления</string>
+    <string name="sort_title">По алфавиту</string>
+    <string name="sort_files">Сначала с файлами</string>
+    <string name="sort_custom">Свой порядок</string>
+    <string name="files_not_attached">Некоторые файлы не удалось прикрепить</string>
+    <string name="attach_file">Прикрепить файл</string>
+    <string name="add_link">Добавить ссылку</string>
+    <string name="link">Ссылка</string>
+    <string name="delete_note">Удалить записку</string>
+    <string name="attachments">Вложения</string>
+    <string name="copying">Копирование…</string>
+    <string name="remove_attachment_title">Убрать вложение?</string>
+    <string name="remove_attachment_text">«%1$s» будет убрано из записки.</string>
+    <string name="delete_note_title">Удалить записку?</string>
+    <string name="delete_note_text">Записка и прикреплённые к ней файлы будут удалены.</string>
+    <string name="start_writing">Начните писать…</string>
+    <string name="tap_to_start_writing">Нажмите, чтобы начать писать</string>
+    <string name="edited_at">Изменено %1$s</string>
+    <string name="file_missing">Файл не найден</string>
+    <string name="no_app_to_open">Нет приложения, чтобы открыть это</string>
+    <string name="could_not_open">Не удалось открыть</string>
+    <string name="format_bold">Жирный</string>
+    <string name="format_italic">Курсив</string>
+    <string name="format_underline">Подчёркнутый</string>
+    <string name="format_strike">Зачёркнутый</string>
+    <string name="format_highlight">Выделение</string>
+    <string name="format_bullets">Маркированный список</string>
+    <string name="format_clear">Очистить форматирование</string>
+</resources>

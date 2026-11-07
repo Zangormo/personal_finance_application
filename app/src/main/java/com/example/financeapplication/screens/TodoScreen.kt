@@ -1,5 +1,7 @@
 package com.example.financeapplication.screens
 
+import androidx.compose.ui.res.stringResource
+import com.example.financeapplication.R
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -173,13 +175,13 @@ fun TodoCategoriesScreen(onBackPress: () -> Unit, onOpenCategory: (String) -> Un
     )
 
     Column(Modifier.fillMaxSize()) {
-        ScreenHeader("To-do", onBack = if (editMode) ({ editMode = false }) else onBackPress) {
+        ScreenHeader(stringResource(R.string.todo), onBack = if (editMode) ({ editMode = false }) else onBackPress) {
             AnimatedVisibility(visible = editMode, enter = fadeIn() + scaleIn(), exit = fadeOut() + scaleOut()) {
-                TextButton(onClick = { editMode = false }) { Text("Done", fontWeight = FontWeight.Bold) }
+                TextButton(onClick = { editMode = false }) { Text(stringResource(R.string.done), fontWeight = FontWeight.Bold) }
             }
         }
         Text(
-            if (editMode) "Drag tiles to reorder · tap to rename" else "Long press a category to edit",
+            if (editMode) stringResource(R.string.todo_categories_edit_hint) else stringResource(R.string.todo_categories_hint),
             style = MaterialTheme.typography.bodySmall,
             color = if (editMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
@@ -233,7 +235,7 @@ fun TodoCategoriesScreen(onBackPress: () -> Unit, onOpenCategory: (String) -> Un
             item(key = "uncategorized") {
                 val (open, done) = stats(UNCATEGORIZED)
                 CategoryTile(
-                    name = "Uncategorized",
+                    name = stringResource(R.string.uncategorized),
                     icon = Icons.Default.Inbox,
                     open = open,
                     done = done,
@@ -291,21 +293,21 @@ fun TodoCategoriesScreen(onBackPress: () -> Unit, onOpenCategory: (String) -> Un
     }
 
     if (adding) {
-        CategoryNameDialog("New category", "", { adding = false }) { name ->
+        CategoryNameDialog(stringResource(R.string.new_category), "", { adding = false }) { name ->
             scope.launch { TodoDataStore.addCategory(context, name) }
             adding = false
         }
     }
     renaming?.let { c ->
-        CategoryNameDialog("Rename category", c.name, { renaming = null }) { name ->
+        CategoryNameDialog(stringResource(R.string.rename_category), c.name, { renaming = null }) { name ->
             scope.launch { TodoDataStore.renameCategory(context, c.id, name) }
             renaming = null
         }
     }
     deleting?.let { c ->
         ConfirmDialog(
-            title = "Delete \"${c.name}\"?",
-            text = "Its tasks will be moved to Uncategorized.",
+            title = stringResource(R.string.delete_category_title, c.name),
+            text = stringResource(R.string.delete_category_text),
             onConfirm = {
                 scope.launch { TodoDataStore.removeCategory(context, c.id) }
                 deleting = null
@@ -370,9 +372,9 @@ private fun CategoryTile(
                 Spacer(Modifier.height(6.dp))
                 Text(
                     when {
-                        open == 0 && done == 0 -> "Empty"
-                        open == 0 -> "All done"
-                        else -> "$open open" + if (done > 0) " · $done done" else ""
+                        open == 0 && done == 0 -> stringResource(R.string.empty)
+                        open == 0 -> stringResource(R.string.all_done)
+                        else -> stringResource(R.string.open_count, open) + if (done > 0) " · " + stringResource(R.string.done_count, done) else ""
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -393,7 +395,7 @@ private fun CategoryTile(
                                 .background(Negative.copy(alpha = 0.18f), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Close, "Delete", tint = Negative, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Close, stringResource(R.string.delete), tint = Negative, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -419,7 +421,7 @@ private fun AddCategoryTile(modifier: Modifier, onClick: () -> Unit) {
             verticalArrangement = Arrangement.Center
         ) {
             Icon(Icons.Default.Add, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("New category", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.new_category), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
         }
     }
 }
@@ -441,7 +443,7 @@ fun TodoListScreen(categoryRoute: String, onBackPress: () -> Unit) {
     val now by rememberNow()
 
     val categoryId = if (categoryRoute == UNCATEGORIZED_ROUTE) UNCATEGORIZED else categoryRoute
-    val title = categories.find { it.id == categoryId }?.name ?: "Uncategorized"
+    val title = categories.find { it.id == categoryId }?.name ?: stringResource(R.string.uncategorized)
     val existing = categories.map { it.id }.toSet()
     val inCategory = items.filter { it.effectiveCategory(existing) == categoryId }
 
@@ -493,7 +495,7 @@ fun TodoListScreen(categoryRoute: String, onBackPress: () -> Unit) {
                 ExtendedFloatingActionButton(
                     onClick = { adding = true },
                     icon = { Icon(Icons.Default.Add, null) },
-                    text = { Text("Task") }
+                    text = { Text(stringResource(R.string.task)) }
                 )
             }
         }
@@ -505,11 +507,11 @@ fun TodoListScreen(categoryRoute: String, onBackPress: () -> Unit) {
         ) {
             ScreenHeader(title, onBack = if (editMode) ({ editMode = false }) else onBackPress) {
                 AnimatedVisibility(visible = editMode, enter = fadeIn() + scaleIn(), exit = fadeOut() + scaleOut()) {
-                    TextButton(onClick = { editMode = false }) { Text("Done", fontWeight = FontWeight.Bold) }
+                    TextButton(onClick = { editMode = false }) { Text(stringResource(R.string.done), fontWeight = FontWeight.Bold) }
                 }
             }
             Text(
-                if (editMode) "Tap a task to edit it" else "Tap a task to check it · long press to edit",
+                if (editMode) stringResource(R.string.todo_tasks_edit_hint) else stringResource(R.string.todo_tasks_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = if (editMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
@@ -522,9 +524,9 @@ fun TodoListScreen(categoryRoute: String, onBackPress: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 if (inCategory.isEmpty()) {
-                    item(key = "empty") { EmptyState("No tasks yet. Tap \"Task\" to add one.", Modifier.animateItem()) }
+                    item(key = "empty") { EmptyState(stringResource(R.string.todo_empty), Modifier.animateItem()) }
                 } else if (pending.isEmpty() && doneThisPeriod.isEmpty() && !showCompleted) {
-                    item(key = "alldone") { EmptyState("Everything is done 🎉", Modifier.animateItem()) }
+                    item(key = "alldone") { EmptyState(stringResource(R.string.everything_done), Modifier.animateItem()) }
                 }
                 items(pending + doneThisPeriod, key = { it.id }) { item ->
                     TodoRow(
@@ -553,7 +555,7 @@ fun TodoListScreen(categoryRoute: String, onBackPress: () -> Unit) {
                                 .padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            SectionTitle("Completed (${completed.size})", Modifier.weight(1f))
+                            SectionTitle(stringResource(R.string.completed_count, completed.size), Modifier.weight(1f))
                             Icon(
                                 Icons.Default.ExpandMore,
                                 null,
@@ -612,16 +614,16 @@ fun TodoListScreen(categoryRoute: String, onBackPress: () -> Unit) {
                     )
                 }
             },
-            confirmButton = { TextButton(onClick = { viewingComment = null }) { Text("Close") } },
+            confirmButton = { TextButton(onClick = { viewingComment = null }) { Text(stringResource(R.string.close)) } },
             dismissButton = {
-                TextButton(onClick = { editing = item; viewingComment = null }) { Text("Edit") }
+                TextButton(onClick = { editing = item; viewingComment = null }) { Text(stringResource(R.string.edit)) }
             }
         )
     }
     deleting?.let { item ->
         ConfirmDialog(
-            title = "Delete task?",
-            text = "\"${item.title}\" will be deleted.",
+            title = stringResource(R.string.delete_task_title),
+            text = stringResource(R.string.will_be_deleted, item.title),
             onConfirm = {
                 scope.launch { TodoDataStore.removeItem(context, item.id) }
                 deleting = null
@@ -645,18 +647,20 @@ private fun isOverdue(item: TodoItem, now: Long): Boolean {
     }.timeInMillis <= now
 }
 
+@Composable
 private fun resetLabel(period: RepeatPeriod): String = when (period) {
-    RepeatPeriod.DAILY -> "resets at midnight"
-    RepeatPeriod.WEEKLY -> "resets on Monday"
-    RepeatPeriod.MONTHLY -> "resets on the 1st"
-    RepeatPeriod.YEARLY -> "resets on Jan 1"
+    RepeatPeriod.DAILY -> stringResource(R.string.resets_daily)
+    RepeatPeriod.WEEKLY -> stringResource(R.string.resets_weekly)
+    RepeatPeriod.MONTHLY -> stringResource(R.string.resets_monthly)
+    RepeatPeriod.YEARLY -> stringResource(R.string.resets_yearly)
 }
 
+@Composable
 private fun periodWord(period: RepeatPeriod): String = when (period) {
-    RepeatPeriod.DAILY -> "today"
-    RepeatPeriod.WEEKLY -> "this week"
-    RepeatPeriod.MONTHLY -> "this month"
-    RepeatPeriod.YEARLY -> "this year"
+    RepeatPeriod.DAILY -> stringResource(R.string.period_word_daily)
+    RepeatPeriod.WEEKLY -> stringResource(R.string.period_word_weekly)
+    RepeatPeriod.MONTHLY -> stringResource(R.string.period_word_monthly)
+    RepeatPeriod.YEARLY -> stringResource(R.string.period_word_yearly)
 }
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
@@ -753,9 +757,9 @@ private fun TodoRow(
                     ) {
                         if (repeat != null) {
                             val time = if (item.hasTime && item.dueAt != null) " · " + Dates.time(item.dueAt) else ""
-                            Chip("↻ " + repeat.label + time, if (recurringDone) Positive else accent)
+                            Chip("↻ " + stringResource(repeat.label) + time, if (recurringDone) Positive else accent)
                             if (recurringDone) {
-                                Chip("✓ Done ${periodWord(repeat)} · ${resetLabel(repeat)}", Positive)
+                                Chip(stringResource(R.string.done_in_period, periodWord(repeat), resetLabel(repeat)), Positive)
                             }
                         } else if (item.dueAt != null) {
                             Chip(
@@ -782,7 +786,7 @@ private fun TodoRow(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            Icons.AutoMirrored.Filled.Notes, "Open comment",
+                            Icons.AutoMirrored.Filled.Notes, stringResource(R.string.open_comment),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp)
                         )
@@ -796,7 +800,7 @@ private fun TodoRow(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        Icons.Default.Edit, "Edit",
+                        Icons.Default.Edit, stringResource(R.string.edit),
                         tint = accent,
                         modifier = Modifier
                             .padding(start = 8.dp)
@@ -810,7 +814,7 @@ private fun TodoRow(
                             .clickable(onClick = onDelete),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.Delete, "Delete", tint = Negative, modifier = Modifier.size(22.dp))
+                        Icon(Icons.Default.Delete, stringResource(R.string.delete), tint = Negative, modifier = Modifier.size(22.dp))
                     }
                 }
             }
@@ -844,14 +848,14 @@ private fun TodoItemDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (initial == null) "New task" else "Edit task") },
+        title = { Text(if (initial == null) stringResource(R.string.new_task) else stringResource(R.string.edit_task)) },
         text = {
             Column(
                 Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                AppTextField(title, { title = it }, "Task")
-                AppTextField(comment, { comment = it }, "Comment (optional)", singleLine = false, minLines = 2)
+                AppTextField(title, { title = it }, stringResource(R.string.task))
+                AppTextField(comment, { comment = it }, stringResource(R.string.comment_optional), singleLine = false, minLines = 2)
 
                 Box {
                     OutlinedCard(
@@ -870,7 +874,7 @@ private fun TodoItemDialog(
                             Icon(Icons.Default.Folder, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(Modifier.width(12.dp))
                             Text(
-                                categories.find { it.id == categoryId }?.name ?: "Uncategorized",
+                                categories.find { it.id == categoryId }?.name ?: stringResource(R.string.uncategorized),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.weight(1f)
@@ -879,16 +883,16 @@ private fun TodoItemDialog(
                         }
                     }
                     DropdownMenu(expanded = categoryMenu, onDismissRequest = { categoryMenu = false }) {
-                        DropdownMenuItem(text = { Text("Uncategorized") }, onClick = { categoryId = UNCATEGORIZED; categoryMenu = false })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.uncategorized)) }, onClick = { categoryId = UNCATEGORIZED; categoryMenu = false })
                         categories.forEach { c ->
                             DropdownMenuItem(text = { Text(c.name) }, onClick = { categoryId = c.id; categoryMenu = false })
                         }
                     }
                 }
 
-                Text("Repeat", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.repeat), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 SegmentedSelector(
-                    options = listOf("Once", "Day", "Week", "Month", "Year"),
+                    options = listOf(stringResource(R.string.repeat_once), stringResource(R.string.repeat_day), stringResource(R.string.repeat_week), stringResource(R.string.repeat_month), stringResource(R.string.repeat_year)),
                     selectedIndex = repeatOptions.indexOf(repeat),
                     onSelect = { repeat = repeatOptions[it] }
                 )
@@ -897,15 +901,15 @@ private fun TodoItemDialog(
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (oneTime) {
                             PickerField(
-                                Icons.Default.CalendarMonth, "Date", dueAt?.let { Dates.date(it) },
+                                Icons.Default.CalendarMonth, stringResource(R.string.date), dueAt?.let { Dates.date(it) },
                                 onClick = { pickDate = true },
                                 onClear = { dueAt = null; hasTime = false },
-                                placeholder = "Date (optional)"
+                                placeholder = stringResource(R.string.date_optional)
                             )
                         }
                         PickerField(
-                            Icons.Default.Schedule, "Time",
-                            placeholder = "Time (optional)",
+                            Icons.Default.Schedule, stringResource(R.string.time),
+                            placeholder = stringResource(R.string.time_optional),
                             value =
                             dueAt?.takeIf { hasTime }?.let { Dates.time(it) },
                             onClick = { pickTime = true },
@@ -920,8 +924,8 @@ private fun TodoItemDialog(
                             val p = repeat
                             if (p != null) {
                                 Text(
-                                    "Can be checked once ${periodWord(p)}; ${resetLabel(p)}" +
-                                        if (p == RepeatPeriod.DAILY) "." else " at 00:00.",
+                                    stringResource(R.string.can_be_checked_once, periodWord(p), resetLabel(p)) +
+                                        if (p == RepeatPeriod.DAILY) "." else stringResource(R.string.at_midnight_suffix),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -952,9 +956,9 @@ private fun TodoItemDialog(
                         )
                     )
                 }
-            ) { Text("Save") }
+            ) { Text(stringResource(R.string.save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }
     )
 
     if (pickDate) {
@@ -971,10 +975,10 @@ private fun CategoryNameDialog(title: String, initial: String, onDismiss: () -> 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
-        text = { AppTextField(name, { name = it }, "Name") },
+        text = { AppTextField(name, { name = it }, stringResource(R.string.name)) },
         confirmButton = {
-            TextButton(enabled = name.isNotBlank(), onClick = { onSave(name.trim()) }) { Text("Save") }
+            TextButton(enabled = name.isNotBlank(), onClick = { onSave(name.trim()) }) { Text(stringResource(R.string.save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }
     )
 }

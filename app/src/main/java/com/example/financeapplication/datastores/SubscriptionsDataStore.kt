@@ -1,5 +1,7 @@
 package com.example.financeapplication.datastores
 
+import androidx.annotation.StringRes
+import com.example.financeapplication.R
 import android.content.Context
 import com.example.financeapplication.classes.NecessityLevel
 import kotlinx.coroutines.flow.Flow
@@ -8,11 +10,11 @@ import kotlinx.coroutines.sync.withLock
 import java.util.Calendar
 import java.util.UUID
 
-enum class RepeatPeriod(val label: String) {
-    DAILY("Daily"),
-    WEEKLY("Weekly"),
-    MONTHLY("Monthly"),
-    YEARLY("Yearly");
+enum class RepeatPeriod(@StringRes val label: Int) {
+    DAILY(R.string.period_daily),
+    WEEKLY(R.string.period_weekly),
+    MONTHLY(R.string.period_monthly),
+    YEARLY(R.string.period_yearly);
 
     /** Returns [start] shifted by [times] periods (month/year shifts are clamped to the month end, no drift). */
     fun shift(start: Long, times: Int): Long {
