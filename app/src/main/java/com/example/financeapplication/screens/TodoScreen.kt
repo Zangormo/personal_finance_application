@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -82,8 +83,11 @@ fun TodoCategoriesScreen(onBackPress: () -> Unit, onOpenCategory: (String) -> Un
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
-    val categories by TodoDataStore.getCategories(context).collectAsState(initial = emptyList())
-    val items by TodoDataStore.getItems(context).collectAsState(initial = emptyList())
+    val loadedCategories by TodoDataStore.getCategories(context).collectAsState(initial = null)
+    val categories = loadedCategories.orEmpty()
+    val loadedItems by TodoDataStore.getItems(context).collectAsState(initial = null)
+    val items = loadedItems.orEmpty()
+    val loaded = loadedCategories != null && loadedItems != null
     val now by rememberNow()
 
     var editMode by rememberSaveable { mutableStateOf(false) }
@@ -181,6 +185,8 @@ fun TodoCategoriesScreen(onBackPress: () -> Unit, onOpenCategory: (String) -> Un
             modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
         )
 
+        // The grid is built only once the data is there, so tiles do not animate into place on every open
+        if (!loaded) return@Column
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Fixed(2),
             state = gridState,
@@ -427,8 +433,11 @@ fun TodoListScreen(categoryRoute: String, onBackPress: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
-    val categories by TodoDataStore.getCategories(context).collectAsState(initial = emptyList())
-    val items by TodoDataStore.getItems(context).collectAsState(initial = emptyList())
+    val loadedCategories by TodoDataStore.getCategories(context).collectAsState(initial = null)
+    val categories = loadedCategories.orEmpty()
+    val loadedItems by TodoDataStore.getItems(context).collectAsState(initial = null)
+    val items = loadedItems.orEmpty()
+    val loaded = loadedCategories != null && loadedItems != null
     val now by rememberNow()
 
     val categoryId = if (categoryRoute == UNCATEGORIZED_ROUTE) UNCATEGORIZED else categoryRoute
@@ -456,6 +465,24 @@ fun TodoListScreen(categoryRoute: String, onBackPress: () -> Unit) {
     val onLongPress: () -> Unit = {
         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
         editMode = true
+    }
+
+    // A checked task moves to another place in the list. The list normally scrolls after its first
+    // visible item, which makes the whole screen follow the task; instead the scroll position is
+    // remembered on the tap and put back in the same frame the new order is shown.
+    val listState = rememberLazyListState()
+    var keepScroll by remember { mutableStateOf<Triple<List<TodoItem>, Int, Int>?>(null) }
+    keepScroll?.let { (before, index, offset) ->
+        if (items !== before) {
+            SideEffect {
+                listState.requestScrollToItem(index, offset)
+                keepScroll = null
+            }
+        }
+    }
+    val toggle: (TodoItem) -> Unit = { item ->
+        keepScroll = Triple(items, listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset)
+        scope.launch { TodoDataStore.toggle(context, item) }
     }
 
     Scaffold(
@@ -488,7 +515,9 @@ fun TodoListScreen(categoryRoute: String, onBackPress: () -> Unit) {
                 modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
             )
 
+            if (!loaded) return@Column
             LazyColumn(
+                state = listState,
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -502,10 +531,10 @@ fun TodoListScreen(categoryRoute: String, onBackPress: () -> Unit) {
                         item = item,
                         now = now,
                         editMode = editMode,
-                        modifier = Modifier.animateItem(),
+                        modifier = Modifier.animateItem(fadeInSpec = null),
                         onClick = {
                             if (editMode) editing = item
-                            else scope.launch { TodoDataStore.toggle(context, item) }
+                            else toggle(item)
                         },
                         onLongClick = onLongPress,
                         onDelete = { deleting = item },
@@ -539,10 +568,10 @@ fun TodoListScreen(categoryRoute: String, onBackPress: () -> Unit) {
                                 item = item,
                                 now = now,
                                 editMode = editMode,
-                                modifier = Modifier.animateItem(),
+                                modifier = Modifier.animateItem(fadeInSpec = null),
                                 onClick = {
                                     if (editMode) editing = item
-                                    else scope.launch { TodoDataStore.toggle(context, item) }
+                                    else toggle(item)
                                 },
                                 onLongClick = onLongPress,
                                 onDelete = { deleting = item },

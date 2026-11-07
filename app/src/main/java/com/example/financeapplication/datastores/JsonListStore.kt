@@ -8,8 +8,17 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import java.util.concurrent.atomic.AtomicInteger
 
 /** Single DataStore for all data introduced in v2 (planned items, subscriptions, debts, todos). */
 val Context.appDataStore by preferencesDataStore("app_data_v2")
@@ -18,9 +27,18 @@ internal val appGson = Gson()
 
 /**
  * Stores a list of objects as a JSON array under a single preferences key.
+ *
+ * Changes are visible right away: [update] puts the new list into memory and the flow emits it
+ * immediately, while writing to disk happens afterwards. Disk values that arrive while writes
+ * are still in flight are ignored, so the UI never jumps back to an older state.
  */
 class JsonListStore<T>(key: String, private val arrayClass: Class<Array<T>>) {
     private val prefKey = stringPreferencesKey(key)
+
+    /** Newest known content, including changes that are not on disk yet. */
+    private val memory = MutableStateFlow<List<T>?>(null)
+    private val pendingWrites = AtomicInteger(0)
+    private val lock = Mutex()
 
     private fun decode(prefs: Preferences): List<T> {
         val json = prefs[prefKey] ?: return emptyList()
@@ -31,15 +49,30 @@ class JsonListStore<T>(key: String, private val arrayClass: Class<Array<T>>) {
         }
     }
 
-    fun flow(context: Context): Flow<List<T>> = context.appDataStore.data.map { decode(it) }
+    private fun disk(context: Context): Flow<List<T>> = context.appDataStore.data.map { decode(it) }
 
-    suspend fun get(context: Context): List<T> = flow(context).first()
+    fun flow(context: Context): Flow<List<T>> = merge(
+        disk(context)
+            .filter { pendingWrites.get() == 0 }
+            .onEach { memory.value = it },
+        memory.filterNotNull()
+    ).distinctUntilChanged()
+
+    suspend fun get(context: Context): List<T> = memory.value ?: disk(context).first()
 
     suspend fun update(context: Context, transform: (MutableList<T>) -> Unit) {
-        context.appDataStore.edit { prefs ->
-            val list = decode(prefs).toMutableList()
+        lock.withLock {
+            val base = memory.value ?: disk(context).first()
+            val list = base.toMutableList()
             transform(list)
-            prefs[prefKey] = appGson.toJson(list)
+            pendingWrites.incrementAndGet()
+            memory.value = list
+        }
+        try {
+            // Always write the newest list, so concurrent writes cannot finish in the wrong order
+            context.appDataStore.edit { prefs -> memory.value?.let { prefs[prefKey] = appGson.toJson(it) } }
+        } finally {
+            pendingWrites.decrementAndGet()
         }
     }
 }

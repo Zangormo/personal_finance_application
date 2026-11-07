@@ -28,7 +28,8 @@ import kotlinx.coroutines.launch
 fun SubscriptionsScreen(onBackPress: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val subs by SubscriptionsDataStore.getSubscriptions(context).collectAsState(initial = emptyList())
+    val loadedSubs by SubscriptionsDataStore.getSubscriptions(context).collectAsState(initial = null)
+    val subs = loadedSubs.orEmpty()
     val sorted = subs.sortedWith(compareBy<Subscription> { !it.active }.thenBy { it.nextChargeAt })
     val monthly = subs.filter { it.active }.sumOf { it.period.monthlyCost(it.amount).toDouble() }.toFloat()
 
@@ -53,6 +54,7 @@ fun SubscriptionsScreen(onBackPress: () -> Unit) {
                 .padding(padding)
         ) {
             ScreenHeader("Subscriptions", onBack = onBackPress)
+            if (loadedSubs == null) return@Column
             LazyColumn(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 96.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)

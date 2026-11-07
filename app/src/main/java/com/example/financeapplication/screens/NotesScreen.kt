@@ -276,6 +276,8 @@ fun NotesScreen(onBackPress: () -> Unit, onOpenNote: (String) -> Unit) {
                 label = "Search",
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 4.dp)
             )
+            // Built only once notes and their sort order are loaded, so nothing animates on open
+            if (notes == null || sort == null) return@Column
             AnimatedVisibility(visible = editMode || (sort == NoteSort.CUSTOM && all.isNotEmpty())) {
                 Text(
                     when {

@@ -27,7 +27,8 @@ import kotlinx.coroutines.launch
 fun PlannedScreen(onBackPress: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val items by PlannedItemsDataStore.getItems(context).collectAsState(initial = emptyList())
+    val loadedItems by PlannedItemsDataStore.getItems(context).collectAsState(initial = null)
+    val items = loadedItems.orEmpty()
 
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val type = if (tab == 0) PlannedType.ESSENTIAL else PlannedType.WISH
@@ -99,6 +100,7 @@ fun PlannedScreen(onBackPress: () -> Unit) {
             }
         }
 
+        if (loadedItems == null) return@Column
         LazyColumn(
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(16.dp),

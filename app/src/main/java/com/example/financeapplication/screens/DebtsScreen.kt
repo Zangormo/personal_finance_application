@@ -37,7 +37,8 @@ import kotlinx.coroutines.launch
 fun DebtsScreen(onBackPress: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val debts by DebtsDataStore.getDebts(context).collectAsState(initial = emptyList())
+    val loadedDebts by DebtsDataStore.getDebts(context).collectAsState(initial = null)
+    val debts = loadedDebts.orEmpty()
 
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var showSettled by rememberSaveable { mutableStateOf(false) }
@@ -72,6 +73,7 @@ fun DebtsScreen(onBackPress: () -> Unit) {
                 .padding(padding)
         ) {
             ScreenHeader("Debts", onBack = onBackPress)
+            if (loadedDebts == null) return@Column
             LazyColumn(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 96.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
