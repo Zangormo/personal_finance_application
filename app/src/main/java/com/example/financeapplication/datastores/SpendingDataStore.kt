@@ -9,7 +9,7 @@ import com.google.gson.Gson
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-val Context.dataStoreSpending by preferencesDataStore("spending_prefs")
+val Context.dataStoreSpending by preferencesDataStore(StoreNames.SPENDING)
 
 data class SpendingRecord(
     val amount: Float,

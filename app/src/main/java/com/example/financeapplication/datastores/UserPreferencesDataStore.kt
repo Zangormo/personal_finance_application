@@ -8,7 +8,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-val Context.dataStoreUserPreferences by preferencesDataStore("user_prefs")
+val Context.dataStoreUserPreferences by preferencesDataStore(StoreNames.USER)
 
 object UserPreferencesDataStore {
 

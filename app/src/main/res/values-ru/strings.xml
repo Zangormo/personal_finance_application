@@ -307,4 +307,35 @@
     <string name="format_highlight">Выделение</string>
     <string name="format_bullets">Маркированный список</string>
     <string name="format_clear">Очистить форматирование</string>
+    <!-- Backup -->
+    <string name="backup_title">Резервная копия и перенос</string>
+    <string name="backup_subtitle">Перенос всех данных на другое устройство: история, списки, записки с файлами, задачи, порядок и расположение</string>
+    <string name="backup_export">Экспорт</string>
+    <string name="backup_import">Импорт</string>
+    <string name="backup_save_to_file">Сохранить в файл</string>
+    <string name="backup_share">Отправить…</string>
+    <string name="backup_saved">Резервная копия сохранена</string>
+    <string name="backup_export_failed">Не удалось создать резервную копию</string>
+    <string name="backup_reading">Чтение резервной копии…</string>
+    <string name="backup_importing">Импорт данных…</string>
+    <string name="backup_confirm_title">Заменить все данные?</string>
+    <string name="backup_from">Копия от %1$s, версия приложения %2$s</string>
+    <string name="backup_confirm_text">Все текущие данные на этом устройстве будут заменены данными из копии. Это нельзя отменить.</string>
+    <string name="backup_replace">Заменить</string>
+    <string name="backup_imported">Данные импортированы</string>
+    <string name="backup_restore">Восстановить из резервной копии</string>
+    <string name="backup_count_spendings">Расходов: %1$d</string>
+    <string name="backup_count_incomes">Доходов: %1$d</string>
+    <string name="backup_count_notes">Записок: %1$d</string>
+    <string name="backup_count_tasks">Задач: %1$d (категорий: %2$d)</string>
+    <string name="backup_count_debts">Долгов: %1$d</string>
+    <string name="backup_count_subscriptions">Подписок: %1$d</string>
+    <string name="backup_count_planned">Запланированных покупок: %1$d</string>
+    <string name="backup_count_files">Прикреплённых файлов: %1$d</string>
+    <string name="backup_error_title">Не удалось импортировать</string>
+    <string name="backup_error_not_backup">Этот файл не является резервной копией Personal Cashier.</string>
+    <string name="backup_error_newer">Копия создана более новой версией приложения. Обновите приложение и попробуйте снова.</string>
+    <string name="backup_error_corrupted">Файл резервной копии повреждён или неполный.</string>
+    <string name="backup_error_unsafe">Файл резервной копии содержит небезопасные пути и не был импортирован.</string>
+    <string name="backup_error_generic">При импорте резервной копии что-то пошло не так.</string>
 </resources>

@@ -21,7 +21,7 @@ import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.atomic.AtomicInteger
 
 /** Single DataStore for all data introduced in v2 (planned items, subscriptions, debts, todos). */
-val Context.appDataStore by preferencesDataStore("app_data_v2")
+val Context.appDataStore by preferencesDataStore(StoreNames.APP)
 
 internal val appGson = Gson()
 
@@ -39,6 +39,19 @@ class JsonListStore<T>(key: String, private val arrayClass: Class<Array<T>>) {
     private val memory = MutableStateFlow<List<T>?>(null)
     private val pendingWrites = AtomicInteger(0)
     private val lock = Mutex()
+
+    init {
+        synchronized(instances) { instances += this }
+    }
+
+    companion object {
+        private val instances = mutableListOf<JsonListStore<*>>()
+
+        /** Forgets the in-memory copies, e.g. after the stores were replaced by an import. */
+        fun invalidateAll() {
+            synchronized(instances) { instances.forEach { it.memory.value = null } }
+        }
+    }
 
     private fun decode(prefs: Preferences): List<T> {
         val json = prefs[prefKey] ?: return emptyList()

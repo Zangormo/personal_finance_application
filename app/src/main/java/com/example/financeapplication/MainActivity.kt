@@ -64,15 +64,26 @@ class MainActivity : ComponentActivity() {
                             val back: () -> Unit = { navController.popBackStack() }
 
                             composable("welcome_screen") {
-                                WelcomeScreen(onContinueClicked = { balance ->
-                                    scope.launch {
-                                        UserPreferencesDataStore.setOverallBalance(context, balance)
-                                        UserPreferencesDataStore.setFirstRunCompleted(context)
-                                        navController.navigate("main_screen") {
-                                            popUpTo("welcome_screen") { inclusive = true }
+                                WelcomeScreen(
+                                    onContinueClicked = { balance ->
+                                        scope.launch {
+                                            UserPreferencesDataStore.setOverallBalance(context, balance)
+                                            UserPreferencesDataStore.setFirstRunCompleted(context)
+                                            navController.navigate("main_screen") {
+                                                popUpTo("welcome_screen") { inclusive = true }
+                                            }
+                                        }
+                                    },
+                                    onRestored = {
+                                        scope.launch {
+                                            // the backup brings the balance with it
+                                            UserPreferencesDataStore.setFirstRunCompleted(context)
+                                            navController.navigate("main_screen") {
+                                                popUpTo("welcome_screen") { inclusive = true }
+                                            }
                                         }
                                     }
-                                })
+                                )
                             }
                             composable("main_screen") {
                                 HomeWithDrawer(

@@ -8,7 +8,7 @@ import com.google.gson.Gson
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-val Context.dataStoreIncome by preferencesDataStore("income_prefs")
+val Context.dataStoreIncome by preferencesDataStore(StoreNames.INCOME)
 
 data class IncomeRecord(
     val amount: Float,

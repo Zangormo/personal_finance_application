@@ -7,7 +7,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-val Context.dataStoreWishlist by preferencesDataStore("wishlist_prefs")
+val Context.dataStoreWishlist by preferencesDataStore(StoreNames.WISHLIST)
 
 data class WishlistItem(
     val name: String,

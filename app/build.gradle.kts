@@ -14,12 +14,17 @@ android {
         minSdk = 34
         targetSdk = 36
         versionCode = 1
-        versionName = "0.2.2"
+        versionName = "0.2.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
+        debug {
+            // Own package: the debug build installs next to the release build with separate data
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(

@@ -254,6 +254,7 @@ fun SettingsScreen(onBackPress: () -> Unit) {
             Modifier.padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            com.example.financeapplication.backup.BackupCard()
             AppCard(Modifier.fillMaxWidth()) {
                 SettingsRowHeader(Icons.Default.Language, stringResource(R.string.language), null)
                 Spacer(Modifier.height(12.dp))

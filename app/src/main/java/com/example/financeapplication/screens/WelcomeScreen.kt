@@ -5,6 +5,7 @@ import com.example.financeapplication.R
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,7 +17,9 @@ import com.example.financeapplication.ui.components.PrimaryButton
 import com.example.financeapplication.utils.Money
 
 @Composable
-fun WelcomeScreen(onContinueClicked: (Float) -> Unit) {
+fun WelcomeScreen(onContinueClicked: (Float) -> Unit, onRestored: () -> Unit) {
+    // A new device can start from a backup of another one
+    val restore = com.example.financeapplication.backup.rememberBackupImport(onImported = onRestored)
     var balanceText by remember { mutableStateOf("") }
     var isError by remember { mutableStateOf(false) }
 
@@ -53,5 +56,7 @@ fun WelcomeScreen(onContinueClicked: (Float) -> Unit) {
                 if (balance != null) onContinueClicked(balance) else isError = true
             }
         )
+        Spacer(Modifier.height(8.dp))
+        TextButton(onClick = restore) { Text(stringResource(R.string.backup_restore)) }
     }
 }
