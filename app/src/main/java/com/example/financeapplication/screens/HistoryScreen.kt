@@ -53,14 +53,18 @@ fun HistoryScreen(onBackPress: () -> Unit) {
     val incomes by IncomeDataStore.getIncomes(context).collectAsState(initial = emptyList())
 
     var filter by rememberSaveable { mutableIntStateOf(0) } // 0 all, 1 spending, 2 income
+    var query by rememberSaveable { mutableStateOf("") }
     var selected by remember { mutableStateOf<HistoryEntry?>(null) }
     var editing by remember { mutableStateOf<HistoryEntry?>(null) }
     var deleting by remember { mutableStateOf<HistoryEntry?>(null) }
 
-    val entries: List<HistoryEntry> = remember(spendings, incomes, filter) {
+    val q = query.trim()
+    val entries: List<HistoryEntry> = remember(spendings, incomes, filter, q) {
         val s = if (filter != 2) spendings.map { HistoryEntry.Spend(it) } else emptyList()
         val i = if (filter != 1) incomes.map { HistoryEntry.Earn(it) } else emptyList()
-        (s + i).sortedByDescending { it.timestamp }
+        (s + i)
+            .filter { q.isEmpty() || it.matches(q) }
+            .sortedByDescending { it.timestamp }
     }
     val grouped = remember(entries) { entries.groupBy { dayKey(it.timestamp) } }
 
@@ -72,13 +76,19 @@ fun HistoryScreen(onBackPress: () -> Unit) {
             onSelect = { filter = it },
             modifier = Modifier.padding(horizontal = 16.dp)
         )
+        AppTextField(
+            value = query,
+            onValueChange = { query = it },
+            label = "Search",
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp)
+        )
         LazyColumn(
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (entries.isEmpty()) {
-                item { EmptyState("No records yet") }
+                item { EmptyState(if (q.isEmpty()) "No records yet" else "Nothing found") }
             }
             grouped.forEach { (day, dayEntries) ->
                 item(key = "h$day") {
@@ -146,6 +156,18 @@ fun HistoryScreen(onBackPress: () -> Unit) {
             onDismiss = { deleting = null }
         )
     }
+}
+
+/** Search by any part of the name / items / description, or of the amount. */
+private fun HistoryEntry.matches(q: String): Boolean {
+    val texts = when (this) {
+        is HistoryEntry.Spend -> record.items.orEmpty()
+        is HistoryEntry.Earn -> listOfNotNull(record.description)
+    }
+    if (texts.any { it.contains(q, ignoreCase = true) }) return true
+    // "12,5" and "12.5" both find 12.50
+    val number = q.replace(',', '.')
+    return Money.format(amount).replace(',', '.').contains(number) || amount.toString().contains(number)
 }
 
 private fun HistoryEntry.title(): String = when (this) {
