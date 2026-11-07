@@ -1,167 +1,201 @@
-# Finance Personal Application
+# Personal Cashier
 
-A personal finance tracker for Android, built entirely with Jetpack Compose. The app lets you record daily income and spending, manage essential expenses and a wishlist, track savings, and review your financial activity over daily, monthly, and yearly periods — all stored locally on the device with no internet connection required.
+A personal finance and organizer app for Android, built with Kotlin and Jetpack Compose.
+Track spending, income and savings, keep subscriptions and debts under control, plan purchases,
+manage to-do lists and write notes — all stored locally on the device, no account and no internet
+connection needed.
+
+Available in **English** and **Russian**.
 
 ---
 
 ## Features
 
-- **Onboarding** — First-launch screen where the user sets their initial overall balance
-- **Dashboard (Main Screen)** — 8-tile grid hub linking to every section of the app
-- **Add Spending** — Record a spending transaction; select items from Essentials or Wishlist, assign a necessity level (`NECESSARY`, `MEDIUM`, `NOT_NEEDED`), and enter an amount; balance is updated automatically
-- **Add Income** — Record an income entry with an amount and free-text description; balance is updated automatically
-- **Essentials** — Manage a named list of recurring essential spending items (add, edit, delete)
-- **Wishlist** — Manage a list of desired items with associated prices (add, edit, delete)
-- **Savings** — Transfer money between the main balance and a separate savings balance via Save / Withdraw tabs
-- **Spending History** — Chronological list of all spending records with inline detail view, edit, and delete
-- **Income History** — Chronological list of all income records with inline detail view, edit, and delete
-- **Overview** — Financial dashboard showing overall balance, current balance, and savings balance; breaks down spending and income totals and averages across daily, monthly, and yearly periods
-- **Splash Screen** — Animated fade-in logo screen that routes to Welcome or Main depending on first-run status
+### Money
+- **Balance & savings** — the main balance plus a separate savings balance; move money between them.
+- **Spending & income** — add records with an amount, items / description and a necessity level
+  (necessary, medium, not needed). The balance is updated automatically; if a spending is bigger
+  than the balance, the app offers to cover the difference from savings.
+- **History** — all spending and income in one list grouped by day, with filters (all / spending /
+  income), search by text or amount, details, editing and deleting (the balance is corrected).
+- **Overview** — statistics for 7 days, a month or a year: totals, a necessity breakdown chart and more.
+- **Planned** — essentials and a wishlist with prices; items can be picked when adding a spending.
+  Reusable items stay in the list after being bought.
+- **Subscriptions** — recurring payments (daily / weekly / monthly / yearly) that are charged
+  automatically on their date and appear in the history; can be paused.
+- **Debts** — money you owe and money owed to you, with partial repayments, due dates and an
+  optional balance update.
+
+### Organizer
+- **To-do** — tasks in categories shown as tiles. One-time tasks with an optional date and time,
+  and recurring tasks that reset every day / week / month / year. Categories can be reordered by
+  dragging, renamed and deleted.
+- **Notes** — a title and unlimited text with formatting (bold, italic, underline, strike-through,
+  highlight, bulleted lists), clickable links, file and link attachments.
+  - Sort by last edited, date added, title, "with files first", or a **custom order** changed by
+    long-pressing and dragging notes.
+  - **Secret notes** are hidden from the list and only appear when their exact title is typed into
+    the search.
+
+### App
+- **Customizable home screen** — long-press a tile (or tap the pencil) to rearrange all tiles;
+  the balance tile can be switched between three sizes.
+- **Side menu** with Home and Settings.
+- **Settings** — language (system / English / Russian), backup and transfer, developer page.
+- **Backup & transfer** — export *all* app data to a single file and import it on another device
+  (see below).
 
 ---
 
-## Tech Stack
+## Backup & transfer
 
-| Layer | Technology |
+**Settings → Backup & transfer**
+
+- **Export** → *Save to file* (system file picker) or *Send…* (share sheet: messengers, e-mail,
+  Bluetooth, …).
+- **Import** → pick a backup file. The app shows what the backup contains (date, app version,
+  number of records, notes, tasks, files …) and asks for confirmation.
+  **Import replaces all current data on the device.**
+- On a fresh install the welcome screen offers **Restore from a backup**, so there is no need to
+  set up the app first.
+
+Everything is transferred: history, balances, all lists, notes with formatting and attached files,
+tasks and categories, subscriptions, debts, the order of everything that can be reordered (home
+tiles, to-do categories, notes) and layout settings. The language setting is per device and is not
+included.
+
+### File format
+
+A backup is a ZIP archive with the extension `.pcbackup`:
+
+```
+manifest.json           header + every key of every preferences DataStore, with its type
+files/<relative path>   note attachment files
+```
+
+```jsonc
+{
+  "format": "personal-cashier-backup",
+  "version": 1,
+  "createdAt": "1762500000000",
+  "appVersion": "0.2.3",
+  "stores": {
+    "user_prefs": { "overall_balance": { "t": "float", "v": "1234.56" }, ... },
+    ...
+  },
+  "files": [ "att-1/photo.jpg", ... ]
+}
+```
+
+The backup is generic: it copies every key of every DataStore, so data added in future versions is
+included automatically. Numbers are stored as strings, so they keep their exact value. Files are
+checked before anything is changed: wrong or damaged files, backups from a newer app version and
+archives with unsafe paths are rejected, and the current data stays untouched.
+
+---
+
+## Tech stack
+
+| | |
 |---|---|
-| Language | Kotlin 2.0.21 |
-| UI framework | Jetpack Compose (BOM 2024.09.00) |
-| UI components | Material 3 (`androidx.compose.material3`) |
-| Navigation | Jetpack Navigation Compose 2.7.3 |
-| Persistence | AndroidX DataStore Preferences 1.1.0 |
-| Database (configured) | Room 2.6.0 (entities and DAOs present, not actively used) |
-| JSON serialization | Gson 2.10.1 |
-| Async / reactive | Kotlin Coroutines, `Flow`, `collectAsState()` |
-| Build system | Gradle 8.12.0-alpha03 with Kotlin DSL |
-| Annotation processing | KAPT 1.9.0 |
+| Language | Kotlin 2.0 |
+| UI | Jetpack Compose (BOM 2024.09), Material 3 |
+| Navigation | Navigation Compose |
+| Storage | AndroidX DataStore Preferences, JSON via Gson |
+| Async | Kotlin Coroutines & Flow |
+| Build | Gradle 8.13, Kotlin DSL |
+| Min / target SDK | 34 (Android 14) / 36 |
 
 ---
 
 ## Architecture
 
-The app follows a **single-Activity, Compose-first** design with no explicit ViewModel layer. State management and data access are handled through the following conventions:
+- **Single activity, Compose only.** `MainActivity` hosts the `NavHost` with all routes.
+- **No ViewModels / repositories.** Screens collect `Flow`s from small DataStore wrapper objects
+  and recompose when data changes.
+- **Storage.** Six preferences DataStores (registered in `datastores/AppStores.kt`):
 
-- **Single Activity** — `MainActivity` hosts the `NavHost` and all route definitions
-- **Compose state** — Each screen manages its own UI state via `mutableStateOf()` and `rememberCoroutineScope()`
-- **DataStore as single source of truth** — All persistent data is read and written through dedicated DataStore wrapper objects; the UI collects `Flow`s from these stores and recomposes reactively
-- **No Repository layer** — DataStore wrappers are called directly from composable screens
+  | DataStore | Contents |
+  |---|---|
+  | `app_data_v2` | notes, to-do categories and tasks, debts, subscriptions, planned items, home layout, notes sort mode |
+  | `user_prefs` | balance, savings, first-run flag |
+  | `spending_prefs` | spending history |
+  | `income_prefs` | income history |
+  | `essentials_prefs`, `wishlist_prefs` | data of older versions (migrated into planned items) |
 
-**Key classes:**
+  Lists are stored as JSON arrays. `JsonListStore` keeps an in-memory copy, so changes appear
+  instantly while they are written to disk in the background. Note attachments are copied into the
+  app's private `files/note_files/` folder.
+- **Backup** (`backup/`) — `BackupEngine` works only with DataStores and a folder (no Android
+  dependencies) and is covered by JVM unit tests; `AppBackup` and `BackupUi` connect it to the
+  system file picker and share sheet.
+- **Localization** — all UI text is in `res/values/strings.xml` and `res/values-ru/strings.xml`;
+  the language can be changed in the app (per-app language, Android 13+).
 
-| Class | Role |
-|---|---|
-| `MainActivity` | Entry point; hosts `NavHost` with all 10 routes |
-| `SplashScreen` | Animated entry screen; determines first-run routing |
-| `WelcomeScreen` | Onboarding balance input |
-| `MainScreen` | Navigation hub (grid of tiles) |
-| `AddSpendingScreen` / `AddIncomeScreen` | Transaction entry screens |
-| `SpendingHistoryScreen` / `IncomeHistoryScreen` | History views with edit/delete |
-| `EssentialsScreen` / `WishlistScreen` | Item list management |
-| `SavingsScreen` | Savings transfer interface |
-| `OverviewScreen` | Period-based financial summary |
-| `UserPreferencesDataStore` | Stores overall balance, savings balance, first-run flag |
-| `SpendingDataStore` | Stores and queries spending records (JSON) |
-| `IncomeDataStore` | Stores and queries income records (JSON) |
-| `EssentialsDataStore` | Stores essential item names (StringSet) |
-| `WishlistDatastore` | Stores wishlist items with prices (StringSet) |
-| `FinanceDatabase` / `SpendingDao` / `IncomeDao` | Room setup (configured, unused) |
-| `NecessityLevel` | Enum: `NECESSARY`, `MEDIUM`, `NOT_NEEDED` |
+> The `classes/` package still contains Room entities and DAOs from an early version. They are not
+> used.
 
 ---
 
-## Data Storage
+## Project structure
 
-All data is stored **locally on the device** using **AndroidX DataStore Preferences**. There is no network layer and no remote database.
-
-| DataStore file | Key | Type | Description |
-|---|---|---|---|
-| `user_prefs` | `overall_balance` | `Float` | User's total available balance |
-| `user_prefs` | `savings_balance` | `Float` | Dedicated savings balance |
-| `user_prefs` | `is_first_run` | `Boolean` | First-launch flag |
-| `spending_prefs` | spending list | `String` (JSON) | All spending records serialized with Gson |
-| `income_prefs` | income list | `String` (JSON) | All income records serialized with Gson |
-| `essentials_prefs` | essentials set | `StringSet` | Names of essential items |
-| `wishlist_prefs` | wishlist set | `StringSet` | Wishlist items serialized as `"name\|price"` |
-
-A **Room database** (`FinanceDatabase`) with `Spending` and `Income` entities and corresponding DAOs is also present in the codebase but is not currently wired into the application flow.
+```
+app/src/
+├── main/
+│   ├── java/com/example/financeapplication/
+│   │   ├── MainActivity.kt          # activity + navigation
+│   │   ├── backup/                  # export / import of all data
+│   │   ├── datastores/              # data classes and storage of every section
+│   │   ├── screens/                 # one file per screen (+ NoteRichText, MainDrawer)
+│   │   ├── ui/components/           # shared Compose components, date/time pickers
+│   │   ├── ui/theme/                # colors, typography, theme
+│   │   └── utils/Money.kt           # money and date formatting
+│   └── res/
+│       ├── values/strings.xml       # English
+│       ├── values-ru/strings.xml    # Russian
+│       └── xml/                     # file provider paths, locale config
+├── debug/res/values/strings.xml     # app name of the debug build
+└── test/                            # JVM unit tests
+```
 
 ---
 
-## Getting Started
+## Getting started
 
-### Requirements
-
-- **Android Studio** — Ladybug or newer recommended
-- **Min SDK** — 34 (Android 14)
-- **Compile / Target SDK** — 36
-- **JDK** — 11
-
-### Clone and run
+Requirements: Android Studio (Ladybug or newer), JDK 11+, a device or emulator with Android 14+.
 
 ```bash
-git clone <repository-url>
-cd Finance-personal-application
+git clone https://github.com/Zangormo/Finance-personal-application.git
 ```
 
-1. Open the `Financeapplication/` folder in Android Studio as the project root
-2. Wait for Gradle sync to complete
-3. Connect a physical device running Android 14+ or create an emulator with API 34+
-4. Run the `app` configuration (`Shift+F10` / green ▶ button)
+Open the cloned folder in Android Studio, wait for the Gradle sync and run the `app` configuration.
+`local.properties` is not tracked; Android Studio creates it with your SDK path.
 
-> **Note:** `local.properties` is not tracked by Git. Android Studio generates it automatically with your local SDK path.
+### Debug and release builds
 
----
+The debug build has its own application ID (`com.example.financeapplication.debug`), the name
+**Personal Cashier Debug** and separate data, so it can be installed next to the release build.
+This is handy for testing — e.g. export a backup from the release build and import it into the
+debug build.
 
-## Project Structure
-
+```bash
+./gradlew installDebug        # install the debug build
+./gradlew assembleRelease     # build the release APK
 ```
-Financeapplication/
-├── app/
-│   ├── build.gradle.kts              # App-level dependencies and SDK config
-│   └── src/main/java/com/example/financeapplication/
-│       ├── MainActivity.kt           # Single activity + NavHost (all routes)
-│       ├── classes/
-│       │   ├── Income.kt             # Room entity + IncomeRecord data class
-│       │   ├── Spending.kt           # Room entity + SpendingRecord data class
-│       │   ├── WishlistItem.kt       # WishlistItem data class
-│       │   ├── NecessityLevel.kt     # Enum: NECESSARY, MEDIUM, NOT_NEEDED
-│       │   └── StringListConverter.kt# Room TypeConverter (List<String> ↔ JSON)
-│       ├── database/
-│       │   ├── FinanceDatabase.kt    # Room database definition
-│       │   ├── SpendingDao.kt        # Room DAO for spendings
-│       │   └── IncomeDao.kt          # Room DAO for incomes
-│       ├── datastores/
-│       │   ├── UserPreferencesDataStore.kt
-│       │   ├── SpendingDataStore.kt
-│       │   ├── IncomeDataStore.kt
-│       │   ├── EssentialsDataStore.kt
-│       │   └── WishlistDatastore.kt
-│       ├── screens/
-│       │   ├── SplashScreen.kt
-│       │   ├── WelcomeScreen.kt
-│       │   ├── MainScreen.kt
-│       │   ├── AddSpendingScreen.kt
-│       │   ├── AddIncomeScreen.kt
-│       │   ├── SpendingHistoryScreen.kt
-│       │   ├── IncomeHistoryScreen.kt
-│       │   ├── EssentialsScreen.kt
-│       │   ├── WishlistScreen.kt
-│       │   ├── SavingsScreen.kt
-│       │   └── OverviewScreen.kt
-│       └── ui/theme/
-│           ├── Theme.kt              # Material 3 light/dark theme + dynamic color
-│           ├── AppColors.kt          # Custom color helper
-│           ├── Color.kt
-│           └── Type.kt
-├── gradle/
-│   ├── libs.versions.toml            # Centralized version catalog
-│   └── wrapper/gradle-wrapper.properties
-├── build.gradle.kts                  # Top-level build config
-└── settings.gradle.kts
+
+### Tests
+
+```bash
+./gradlew testDebugUnitTest
 ```
+
+The unit tests cover money parsing, note text formatting and, in detail, the backup:
+encoding of every value type, validation of broken / foreign / malicious files, the ZIP container,
+complete device-to-device transfers with realistic data, and a check that every DataStore in the
+code is part of backups.
 
 ---
 
 ## Version
 
-**Alpha build 1.2** — Version code 1
+**0.2.3** (alpha)
