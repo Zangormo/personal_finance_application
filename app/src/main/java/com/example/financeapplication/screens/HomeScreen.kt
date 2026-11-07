@@ -34,7 +34,7 @@ import com.example.financeapplication.utils.Money
 enum class HomeDestination { ADD_SPENDING, ADD_INCOME, HISTORY, PLANNED, SAVINGS, OVERVIEW, SUBSCRIPTIONS, DEBTS, TODO, NOTES }
 
 @Composable
-fun HomeScreen(onNavigate: (HomeDestination) -> Unit) {
+fun HomeScreen(onNavigate: (HomeDestination) -> Unit, onOpenMenu: () -> Unit) {
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
@@ -69,9 +69,20 @@ fun HomeScreen(onNavigate: (HomeDestination) -> Unit) {
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp)
-            .padding(top = 12.dp, bottom = 24.dp),
+            .padding(top = 4.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.offset(x = (-12).dp)) {
+            IconButton(onClick = onOpenMenu) {
+                Icon(Icons.Filled.Menu, contentDescription = "Menu")
+            }
+            Spacer(Modifier.width(4.dp))
+            Text(
+                "Personal Cashier",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        }
         BalanceHero(
             balance = balance,
             savings = savings,

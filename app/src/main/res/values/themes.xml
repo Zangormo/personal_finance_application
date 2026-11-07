@@ -3,6 +3,9 @@
 
     <style name="Theme.FinanceApplication" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@color/splash_background</item>
+        <!-- System launch screen (Android 12+): same dark background as the app and the icon -->
+        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/splash_background</item>
     </style>
 
     <style name="Theme.FinanceApplication.Splash" parent="Theme.FinanceApplication">

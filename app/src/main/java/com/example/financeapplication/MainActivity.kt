@@ -75,7 +75,10 @@ class MainActivity : ComponentActivity() {
                                 })
                             }
                             composable("main_screen") {
-                                HomeScreen(onNavigate = { dest ->
+                                HomeWithDrawer(
+                                    onOpenSettings = { navController.navigate("settings") },
+                                    onOpenNote = { id -> navController.navigate("note/$id") },
+                                    onNavigate = { dest ->
                                     navController.navigate(
                                         when (dest) {
                                             HomeDestination.ADD_SPENDING -> "transaction/spending"
@@ -92,6 +95,7 @@ class MainActivity : ComponentActivity() {
                                     )
                                 })
                             }
+                            composable("settings") { SettingsScreen(onBackPress = back) }
                             composable("transaction/spending") { TransactionScreen(initialIsIncome = false, onBackPress = back) }
                             composable("transaction/income") { TransactionScreen(initialIsIncome = true, onBackPress = back) }
                             composable("history") { HistoryScreen(onBackPress = back) }
