@@ -4,7 +4,10 @@ import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import kotlinx.coroutines.Dispatchers
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
@@ -27,6 +30,20 @@ data class NoteAttachment(
     val addedAt: Long = System.currentTimeMillis(),
 )
 
+/** Inline text formatting of a note. */
+enum class NoteStyle { BOLD, ITALIC, UNDERLINE, STRIKE, HIGHLIGHT }
+
+/** [style] applied to the characters from [start] until [end] (exclusive) of [Note.text]. */
+data class NoteSpan(val style: NoteStyle, val start: Int, val end: Int)
+
+enum class NoteSort(val label: String) {
+    EDITED("Last edited"),
+    CREATED("Date added"),
+    TITLE("Alphabetical"),
+    FILES("With files first"),
+    CUSTOM("Custom order"),
+}
+
 data class Note(
     val id: String = UUID.randomUUID().toString(),
     val title: String = "",
@@ -34,6 +51,11 @@ data class Note(
     val attachments: List<NoteAttachment>? = emptyList(),
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
+    val spans: List<NoteSpan>? = null,
+    /** Position in the custom order; notes without one (new ones) come first. */
+    val order: Int? = null,
+    /** A secret note is only listed when its exact title is typed into the search. */
+    val secret: Boolean? = null,
 ) {
     val isEmpty: Boolean get() = title.isBlank() && text.isBlank() && attachments.orEmpty().isEmpty()
 }
@@ -52,6 +74,27 @@ object NotesDataStore {
     suspend fun remove(context: Context, note: Note) {
         store.update(context) { list -> list.removeAll { it.id == note.id } }
         note.attachments.orEmpty().forEach { deleteFile(context, it) }
+    }
+
+    /** Saves a new custom order (ids of the notes in the desired order). */
+    suspend fun reorder(context: Context, orderedIds: List<String>) = store.update(context) { list ->
+        val pos = orderedIds.withIndex().associate { it.value to it.index }
+        for (i in list.indices) list[i] = list[i].copy(order = pos[list[i].id] ?: (orderedIds.size + i))
+    }
+
+    suspend fun setSecret(context: Context, id: String, secret: Boolean) = store.update(context) { list ->
+        val i = list.indexOfFirst { it.id == id }
+        if (i != -1) list[i] = list[i].copy(secret = secret)
+    }
+
+    private val SORT_KEY = stringPreferencesKey("notes_sort")
+
+    fun getSort(context: Context): Flow<NoteSort> = context.appDataStore.data.map { prefs ->
+        prefs[SORT_KEY]?.let { name -> NoteSort.entries.firstOrNull { it.name == name } } ?: NoteSort.EDITED
+    }
+
+    suspend fun setSort(context: Context, sort: NoteSort) {
+        context.appDataStore.edit { it[SORT_KEY] = sort.name }
     }
 
     fun filesDir(context: Context): File = File(context.filesDir, "note_files").apply { mkdirs() }

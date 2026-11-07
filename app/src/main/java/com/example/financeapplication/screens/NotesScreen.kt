@@ -15,6 +15,28 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.lazy.LazyListItemInfo
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.zIndex
+import com.example.financeapplication.datastores.NoteSort
+import com.example.financeapplication.datastores.NoteSpan
+import com.example.financeapplication.datastores.NoteStyle
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -71,27 +93,143 @@ const val NEW_NOTE = "new"
 /* List of notes                                                                              */
 /* ------------------------------------------------------------------------------------------ */
 
+private fun Note.isSecret() = secret == true
+
+private fun sortNotes(notes: List<Note>, sort: NoteSort): List<Note> = when (sort) {
+    NoteSort.EDITED -> notes.sortedByDescending { it.updatedAt }
+    NoteSort.CREATED -> notes.sortedByDescending { it.createdAt }
+    NoteSort.TITLE -> notes.sortedWith(
+        compareBy<Note> { it.title.isBlank() }.thenBy(String.CASE_INSENSITIVE_ORDER) { it.title.trim() }
+    )
+    NoteSort.FILES -> notes.sortedWith(
+        compareByDescending<Note> { it.attachments.orEmpty().any { a -> a.type == AttachmentType.FILE } }
+            .thenByDescending { it.attachments.orEmpty().size }
+            .thenByDescending { it.updatedAt }
+    )
+    // notes that were never placed (new ones) come first, newest on top
+    NoteSort.CUSTOM -> notes.sortedWith(
+        compareBy<Note> { it.order != null }.thenBy { it.order ?: 0 }.thenByDescending { it.createdAt }
+    )
+}
+
 @Composable
 fun NotesScreen(onBackPress: () -> Unit, onOpenNote: (String) -> Unit) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val haptics = LocalHapticFeedback.current
     val notes by NotesDataStore.getNotes(context).collectAsState(initial = null)
-    var query by remember { mutableStateOf("") }
+    val sort by NotesDataStore.getSort(context).collectAsState(initial = null)
+    var query by rememberSaveable { mutableStateOf("") }
+    var editMode by rememberSaveable { mutableStateOf(false) }
+    var sortMenu by remember { mutableStateOf(false) }
+    var configuring by remember { mutableStateOf<String?>(null) }
+    BackHandler(enabled = editMode) { editMode = false }
 
-    val visible = notes.orEmpty()
-        .filter {
-            query.isBlank() || it.title.contains(query, ignoreCase = true) || it.text.contains(query, ignoreCase = true)
+    val all = notes.orEmpty()
+    val q = query.trim()
+    // A secret note shows up only when its exact title is typed
+    val sorted = sortNotes(all, sort ?: NoteSort.EDITED)
+    val stored = sorted.filter { n ->
+        if (n.isSecret()) q.isNotEmpty() && n.title.trim().equals(q, ignoreCase = true)
+        else q.isEmpty() || n.title.contains(q, ignoreCase = true) || n.text.contains(q, ignoreCase = true)
+    }
+
+    // While dragging (and until the new order is saved) the list uses a local order of ids
+    var localOrder by remember { mutableStateOf<List<String>?>(null) }
+    var draggingId by remember { mutableStateOf<String?>(null) }
+    var dragTop by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(stored.map { it.id }, draggingId) {
+        if (draggingId == null && localOrder == stored.map { it.id }) localOrder = null
+    }
+    val visible: List<Note> = localOrder?.let { ids ->
+        val byId = stored.associateBy { it.id }
+        ids.mapNotNull { byId[it] } + stored.filter { it.id !in ids }
+    } ?: stored
+    val currentVisible by rememberUpdatedState(visible)
+    val currentSorted by rememberUpdatedState(sorted)
+    val currentEditMode by rememberUpdatedState(editMode)
+    val currentStoredIds by rememberUpdatedState(stored.map { it.id })
+    val currentSort by rememberUpdatedState(sort)
+    val density = LocalDensity.current
+    val canDrag by rememberUpdatedState(q.isEmpty())
+
+    val listState = rememberLazyListState()
+    var lastSwappedKey by remember { mutableStateOf<Any?>(null) }
+
+    fun itemAt(y: Float): LazyListItemInfo? {
+        val base = listState.layoutInfo.viewportStartOffset
+        return listState.layoutInfo.visibleItemsInfo.firstOrNull { y >= it.offset - base && y <= it.offset - base + it.size }
+    }
+
+    fun onDragMove() {
+        val id = draggingId ?: return
+        val items = listState.layoutInfo.visibleItemsInfo
+        val current = items.firstOrNull { it.key == NOTE_KEY + id } ?: return
+        val center = dragTop + current.size / 2f
+        fun LazyListItemInfo.hit() = center >= offset && center <= offset + size
+        lastSwappedKey?.let { k -> if (items.none { it.key == k && it.hit() }) lastSwappedKey = null }
+        val target = items.firstOrNull {
+            it.key != current.key && it.key != lastSwappedKey && (it.key as? String)?.startsWith(NOTE_KEY) == true && it.hit()
+        } ?: return
+        lastSwappedKey = target.key
+        val ids = localOrder ?: currentVisible.map { it.id }
+        val from = ids.indexOf(id)
+        val to = ids.indexOfFirst { NOTE_KEY + it == target.key }
+        if (from == -1 || to == -1) return
+        localOrder = ids.toMutableList().apply { add(to, removeAt(from)) }
+        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+    }
+
+    fun finishDrag() {
+        val ids = localOrder
+        if (draggingId != null && ids != null && ids != currentStoredIds) {
+            // Hidden (secret) notes keep their places; the visible ones take the new order
+            val visibleIds = ids.toSet()
+            val iter = ids.iterator()
+            val full = currentSorted.map { if (it.id in visibleIds && iter.hasNext()) iter.next() else it.id }
+            scope.launch {
+                NotesDataStore.reorder(context, full)
+                if (currentSort != NoteSort.CUSTOM) NotesDataStore.setSort(context, NoteSort.CUSTOM)
+            }
         }
-        .sortedByDescending { it.updatedAt }
+        draggingId = null
+        lastSwappedKey = null
+    }
+
+    // Scroll the list while a note is held near the top or bottom edge
+    LaunchedEffect(draggingId) {
+        if (draggingId == null) return@LaunchedEffect
+        val edge = with(density) { 72.dp.toPx() }
+        while (true) {
+            val info = listState.layoutInfo
+            val current = info.visibleItemsInfo.firstOrNull { it.key == NOTE_KEY + draggingId }
+            if (current != null) {
+                val height = info.viewportSize.height
+                // item offsets are relative to the viewport start (which is above the top padding)
+                val top = dragTop - info.viewportStartOffset
+                val bottom = top + current.size
+                val speed = when {
+                    top < edge -> -(edge - top) / edge * 24f
+                    bottom > height - edge -> (bottom - (height - edge)) / edge * 24f
+                    else -> 0f
+                }
+                if (speed != 0f && listState.scrollBy(speed.coerceIn(-24f, 24f)) != 0f) onDragMove()
+            }
+            withFrameNanos { }
+        }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { onOpenNote(NEW_NOTE) },
-                icon = { Icon(Icons.Default.Add, null) },
-                text = { Text("Note") }
-            )
+            AnimatedVisibility(visible = !editMode, enter = fadeIn() + scaleIn(), exit = fadeOut() + scaleOut()) {
+                ExtendedFloatingActionButton(
+                    onClick = { onOpenNote(NEW_NOTE) },
+                    icon = { Icon(Icons.Default.Add, null) },
+                    text = { Text("Note") }
+                )
+            }
         }
     ) { padding ->
         Column(
@@ -99,75 +237,289 @@ fun NotesScreen(onBackPress: () -> Unit, onOpenNote: (String) -> Unit) {
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            ScreenHeader("Notes", onBack = onBackPress)
-            LazyColumn(
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 96.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (notes.orEmpty().size > 3) {
-                    item(key = "search") {
-                        AppTextField(
-                            value = query,
-                            onValueChange = { query = it },
-                            label = "Search",
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
+            ScreenHeader("Notes", onBack = if (editMode) ({ editMode = false }) else onBackPress) {
+                Crossfade(targetState = editMode, label = "notesHeader") { editing ->
+                    if (editing) {
+                        TextButton(onClick = { editMode = false }) { Text("Done", fontWeight = FontWeight.Bold) }
+                    } else {
+                        Box {
+                            IconButton(onClick = { sortMenu = true }) { Icon(Icons.AutoMirrored.Filled.Sort, "Sort") }
+                            DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }) {
+                                NoteSort.entries.forEach { option ->
+                                    DropdownMenuItem(
+                                        text = { Text(option.label) },
+                                        trailingIcon = {
+                                            if (option == (sort ?: NoteSort.EDITED)) {
+                                                Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
+                                            }
+                                        },
+                                        onClick = {
+                                            sortMenu = false
+                                            scope.launch {
+                                                // Starting a custom order: keep what is on screen now
+                                                if (option == NoteSort.CUSTOM && all.none { it.order != null }) {
+                                                    NotesDataStore.reorder(context, sorted.map { it.id })
+                                                }
+                                                NotesDataStore.setSort(context, option)
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
+            }
+            AppTextField(
+                value = query,
+                onValueChange = { query = it },
+                label = "Search",
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 4.dp)
+            )
+            AnimatedVisibility(visible = editMode || (sort == NoteSort.CUSTOM && all.isNotEmpty())) {
+                Text(
+                    when {
+                        !editMode -> "Long press a note to reorder or configure it"
+                        q.isNotEmpty() -> "Clear the search to reorder · tap a note to configure it"
+                        else -> "Drag notes to reorder · tap a note to configure it"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (editMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp)
+                )
+            }
+            LazyColumn(
+                state = listState,
+                userScrollEnabled = draggingId == null,
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .pointerInput(Unit) {
+                        awaitEachGesture {
+                            val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                            val startItem = itemAt(down.position.y) ?: return@awaitEachGesture
+                            val key = startItem.key as? String ?: return@awaitEachGesture
+                            if (!key.startsWith(NOTE_KEY)) return@awaitEachGesture
+                            val id = key.removePrefix(NOTE_KEY)
+                            val wasEditMode = currentEditMode
+                            var started = false
+                            fun lift() {
+                                started = true
+                                localOrder = null
+                                draggingId = id
+                                dragTop = startItem.offset.toFloat()
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            }
+                            if (!wasEditMode) {
+                                // Long press: enter the reorder mode and keep holding the note to drag it
+                                val longPressed = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                                    var moved = Offset.Zero
+                                    var cancelled = false
+                                    while (!cancelled) {
+                                        val change = awaitPointerEvent(PointerEventPass.Initial).changes.firstOrNull { it.id == down.id }
+                                        if (change == null || !change.pressed) {
+                                            cancelled = true
+                                        } else {
+                                            moved += change.positionChange()
+                                            if (moved.getDistance() > viewConfiguration.touchSlop) cancelled = true
+                                        }
+                                    }
+                                    false
+                                } ?: true
+                                if (!longPressed) return@awaitEachGesture
+                                editMode = true
+                                if (canDrag) lift() else haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            }
+                            var slop = Offset.Zero
+                            var holding = !wasEditMode
+                            while (true) {
+                                val event = awaitPointerEvent(PointerEventPass.Initial)
+                                val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                                if (!change.pressed) {
+                                    // the long press must not also open the note
+                                    if (holding) change.consume()
+                                    break
+                                }
+                                val delta = change.positionChange()
+                                if (!started) {
+                                    slop += delta
+                                    if (canDrag && slop.getDistance() > viewConfiguration.touchSlop) {
+                                        lift()
+                                        holding = true
+                                        dragTop += slop.y
+                                    }
+                                } else {
+                                    dragTop += delta.y
+                                    onDragMove()
+                                }
+                                if (started || holding) change.consume()
+                            }
+                            if (started) finishDrag()
+                        }
+                    }
+            ) {
                 if (notes != null && visible.isEmpty()) {
                     item(key = "empty") {
                         EmptyState(
-                            if (query.isBlank()) "No notes yet. Tap \"Note\" to write one." else "Nothing found",
+                            if (q.isEmpty()) "No notes yet. Tap \"Note\" to write one." else "Nothing found",
                             Modifier.animateItem()
                         )
                     }
                 }
-                items(visible, key = { it.id }) { note ->
-                    NoteCard(note, Modifier.animateItem()) { onOpenNote(note.id) }
+                items(visible, key = { NOTE_KEY + it.id }) { note ->
+                    val isDragging = draggingId == note.id
+                    val itemModifier = if (isDragging) {
+                        Modifier
+                            .zIndex(1f)
+                            .graphicsLayer {
+                                val info = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == NOTE_KEY + note.id }
+                                if (info != null) translationY = dragTop - info.offset
+                                scaleX = 1.03f
+                                scaleY = 1.03f
+                                shadowElevation = 20f
+                                shape = CardShape
+                            }
+                    } else {
+                        Modifier.animateItem()
+                    }
+                    NoteCard(
+                        note = note,
+                        editMode = editMode,
+                        modifier = itemModifier,
+                        onConfigure = { configuring = note.id }
+                    ) { if (editMode) configuring = note.id else onOpenNote(note.id) }
                 }
             }
         }
     }
+
+    configuring?.let { id ->
+        val note = all.find { it.id == id }
+        if (note == null) {
+            configuring = null
+        } else {
+            NoteSettingsDialog(
+                note = note,
+                onSecret = { secret -> scope.launch { NotesDataStore.setSecret(context, id, secret) } },
+                onDismiss = { configuring = null }
+            )
+        }
+    }
+}
+
+private const val NOTE_KEY = "n:"
+
+@Composable
+private fun NoteSettingsDialog(note: Note, onSecret: (Boolean) -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(note.title.ifBlank { "Untitled" }, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+        text = {
+            Column {
+                SwitchRow(
+                    text = "Secret note",
+                    checked = note.isSecret(),
+                    onCheckedChange = onSecret,
+                    subtitle = "Hidden from the list. It appears only when its exact title is typed into the search."
+                )
+                if (note.isSecret() && note.title.isBlank()) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "This note has no title, so it cannot be found. Give it a title to be able to open it.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Negative
+                    )
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } }
+    )
 }
 
 @Composable
-private fun NoteCard(note: Note, modifier: Modifier, onClick: () -> Unit) {
-    AppCard(modifier.fillMaxWidth(), onClick = onClick) {
-        Text(
-            note.title.ifBlank { "Untitled" },
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = if (note.title.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
-        if (note.text.isNotBlank()) {
-            Spacer(Modifier.height(6.dp))
-            Text(
-                note.text.trim(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        Spacer(Modifier.height(10.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                Dates.dateTime(note.updatedAt),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f)
-            )
-            val count = note.attachments.orEmpty().size
-            if (count > 0) {
+private fun NoteCard(note: Note, editMode: Boolean, modifier: Modifier, onConfigure: () -> Unit, onClick: () -> Unit) {
+    val borderColor by animateColorAsState(
+        if (editMode) MaterialTheme.colorScheme.primary.copy(alpha = 0.6f) else MaterialTheme.colorScheme.outlineVariant,
+        label = "noteBorder"
+    )
+    val preview = remember(note.text, note.spans) {
+        val full = richText(note.text, note.spans.orEmpty())
+        val start = note.text.indexOfFirst { !it.isWhitespace() }
+        if (start == -1) AnnotatedString("") else full.subSequence(start, note.text.indexOfLast { !it.isWhitespace() } + 1)
+    }
+    Card(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        shape = CardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, borderColor)
+    ) {
+        Row(Modifier.padding(start = if (editMode) 4.dp else 16.dp, end = if (editMode) 4.dp else 16.dp)) {
+            AnimatedVisibility(visible = editMode, modifier = Modifier.align(Alignment.CenterVertically)) {
                 Icon(
-                    Icons.Default.AttachFile, null,
+                    Icons.Default.DragIndicator, null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.padding(horizontal = 6.dp)
                 )
-                Spacer(Modifier.width(2.dp))
-                Text("$count", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Column(
+                Modifier
+                    .weight(1f)
+                    .padding(vertical = 16.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (note.isSecret()) {
+                        Icon(
+                            Icons.Default.Lock, "Secret",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                    }
+                    Text(
+                        note.title.ifBlank { "Untitled" },
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (note.title.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                if (preview.isNotEmpty()) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        preview,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Spacer(Modifier.height(10.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        Dates.dateTime(note.updatedAt),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                    val count = note.attachments.orEmpty().size
+                    if (count > 0) {
+                        Icon(
+                            Icons.Default.AttachFile, null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(2.dp))
+                        Text("$count", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+            AnimatedVisibility(visible = editMode, modifier = Modifier.align(Alignment.CenterVertically)) {
+                IconButton(onClick = onConfigure) {
+                    Icon(Icons.Default.Tune, "Configure note", tint = MaterialTheme.colorScheme.primary)
+                }
             }
         }
     }
@@ -187,9 +539,38 @@ fun NoteScreen(noteId: String, onBackPress: () -> Unit) {
     var loaded by remember { mutableStateOf(false) }
     var original by remember { mutableStateOf<Note?>(null) }
     var title by remember { mutableStateOf("") }
-    var text by remember { mutableStateOf("") }
+    var body by remember { mutableStateOf(TextFieldValue("")) }
+    var spans by remember { mutableStateOf<List<NoteSpan>>(emptyList()) }
+    // Styles that newly typed text gets (toggled with an empty selection)
+    var typing by remember { mutableStateOf<Set<NoteStyle>>(emptySet()) }
+    var bodyFocused by remember { mutableStateOf(false) }
+    val text = body.text
     var attachments by remember { mutableStateOf<List<NoteAttachment>>(emptyList()) }
     var editing by remember { mutableStateOf(isNew) }
+
+    LaunchedEffect(editing) { if (!editing) bodyFocused = false }
+
+    fun onBodyChange(nv: TextFieldValue) {
+        val old = body
+        if (nv.text == old.text) {
+            if (nv.selection != old.selection && nv.selection.collapsed) typing = stylesAt(spans, nv.selection.start)
+            body = nv
+            return
+        }
+        var next = RichValue(nv, adjustSpans(spans, old.text, nv.text, nv.selection, typing))
+        continueBullets(old.text, next)?.let { next = it }
+        spans = next.spans
+        body = next.value
+    }
+
+    fun toggle(style: NoteStyle) {
+        val sel = body.selection
+        if (sel.collapsed) {
+            typing = if (style in typing) typing - style else typing + style
+        } else {
+            spans = toggleStyle(spans, style, sel.min, sel.max, body.text.length)
+        }
+    }
 
     var addingLink by remember { mutableStateOf(false) }
     var removing by remember { mutableStateOf<NoteAttachment?>(null) }
@@ -202,7 +583,8 @@ fun NoteScreen(noteId: String, onBackPress: () -> Unit) {
         if (n != null) {
             original = n
             title = n.title
-            text = n.text
+            body = TextFieldValue(n.text, TextRange(n.text.length))
+            spans = normalizeSpans(n.spans.orEmpty(), n.text.length)
             attachments = n.attachments.orEmpty()
         }
         loaded = true
@@ -210,7 +592,7 @@ fun NoteScreen(noteId: String, onBackPress: () -> Unit) {
 
     fun current(): Note {
         val base = original ?: Note(id = id)
-        return base.copy(title = title, text = text, attachments = attachments)
+        return base.copy(title = title, text = text, spans = spans.ifEmpty { null }, attachments = attachments)
     }
 
     /** Saves when something changed. An empty note is not kept. */
@@ -223,14 +605,15 @@ fun NoteScreen(noteId: String, onBackPress: () -> Unit) {
             original = null
             return
         }
-        if (saved != null && saved.title == note.title && saved.text == note.text && saved.attachments.orEmpty() == attachments) return
+        if (saved != null && saved.title == note.title && saved.text == note.text &&
+            saved.spans.orEmpty() == spans && saved.attachments.orEmpty() == attachments) return
         val toSave = note.copy(updatedAt = System.currentTimeMillis())
         NotesDataStore.save(context, toSave)
         original = toSave
     }
 
     // Autosave while typing
-    LaunchedEffect(title, text, attachments) {
+    LaunchedEffect(title, text, spans, attachments) {
         if (!loaded) return@LaunchedEffect
         delay(600)
         persist()
@@ -301,12 +684,14 @@ fun NoteScreen(noteId: String, onBackPress: () -> Unit) {
                     NoteEditor(
                         title = title,
                         onTitle = { title = it },
-                        text = text,
-                        onText = { text = it },
+                        body = body,
+                        onBody = ::onBodyChange,
+                        spans = spans,
+                        onBodyFocus = { bodyFocused = it },
                         focusTitle = isNew && original == null && title.isEmpty()
                     )
                 } else {
-                    NoteViewer(title = title, text = text, updatedAt = original?.updatedAt, onEdit = { editing = true })
+                    NoteViewer(title = title, text = text, spans = spans, updatedAt = original?.updatedAt, onEdit = { editing = true })
                 }
             }
 
@@ -323,6 +708,34 @@ fun NoteScreen(noteId: String, onBackPress: () -> Unit) {
                     }
                 }
             }
+        }
+
+        // Formatting bar right above the keyboard while the text is being edited
+        AnimatedVisibility(
+            visible = editing && bodyFocused,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            val sel = body.selection
+            FormatToolbar(
+                isActive = { style ->
+                    if (sel.collapsed) style in typing else isCovered(spans, style, sel.min, sel.max)
+                },
+                bulletsActive = run {
+                    val lineStart = text.lastIndexOf('\n', (sel.min - 1).coerceAtLeast(-1)) + 1
+                    text.startsWith(BULLET, lineStart)
+                },
+                onToggle = ::toggle,
+                onBullets = {
+                    val next = toggleBullets(RichValue(body, spans))
+                    spans = next.spans
+                    body = next.value
+                },
+                onClear = {
+                    if (sel.collapsed) typing = emptySet()
+                    else spans = clearStyles(spans, sel.min, sel.max, text.length)
+                }
+            )
         }
     }
 
@@ -357,7 +770,7 @@ fun NoteScreen(noteId: String, onBackPress: () -> Unit) {
                 scope.launch {
                     NotesDataStore.remove(context, current())
                     original = null
-                    title = ""; text = ""; attachments = emptyList()
+                    title = ""; body = TextFieldValue(""); spans = emptyList(); attachments = emptyList()
                     onBackPress()
                 }
             },
@@ -370,10 +783,14 @@ fun NoteScreen(noteId: String, onBackPress: () -> Unit) {
 private fun NoteEditor(
     title: String,
     onTitle: (String) -> Unit,
-    text: String,
-    onText: (String) -> Unit,
+    body: TextFieldValue,
+    onBody: (TextFieldValue) -> Unit,
+    spans: List<NoteSpan>,
+    onBodyFocus: (Boolean) -> Unit,
     focusTitle: Boolean,
 ) {
+    val text = body.text
+    val transformation = remember(spans) { RichTransformation(spans) }
     val titleFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { if (focusTitle) titleFocus.requestFocus() }
     val onSurface = MaterialTheme.colorScheme.onSurface
@@ -400,14 +817,16 @@ private fun NoteEditor(
         Spacer(Modifier.height(8.dp))
         val bodyStyle = MaterialTheme.typography.bodyLarge.copy(color = onSurface)
         BasicTextField(
-            value = text,
-            onValueChange = onText,
+            value = body,
+            onValueChange = onBody,
             textStyle = bodyStyle,
             cursorBrush = cursor,
+            visualTransformation = transformation,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 240.dp),
+                .heightIn(min = 240.dp)
+                .onFocusChanged { onBodyFocus(it.isFocused) },
             decorationBox = { inner ->
                 if (text.isEmpty()) Text("Start writing…", style = bodyStyle.copy(color = hint))
                 inner()
@@ -417,9 +836,9 @@ private fun NoteEditor(
 }
 
 @Composable
-private fun NoteViewer(title: String, text: String, updatedAt: Long?, onEdit: () -> Unit) {
+private fun NoteViewer(title: String, text: String, spans: List<NoteSpan>, updatedAt: Long?, onEdit: () -> Unit) {
     val linkColor = MaterialTheme.colorScheme.primary
-    val body = remember(text, linkColor) { linkify(text, linkColor) }
+    val body = remember(text, spans, linkColor) { richText(text, spans, linkColor) }
     Column(Modifier.fillMaxWidth()) {
         Text(
             title.ifBlank { "Untitled" },
@@ -453,18 +872,7 @@ private fun NoteViewer(title: String, text: String, updatedAt: Long?, onEdit: ()
     }
 }
 
-/** Makes web addresses in the text clickable. */
-private fun linkify(text: String, color: androidx.compose.ui.graphics.Color): AnnotatedString = buildAnnotatedString {
-    append(text)
-    val matcher = Patterns.WEB_URL.matcher(text)
-    val style = TextLinkStyles(SpanStyle(color = color, textDecoration = TextDecoration.Underline))
-    while (matcher.find()) {
-        val raw = matcher.group() ?: continue
-        addLink(LinkAnnotation.Url(normalizeUrl(raw), style), matcher.start(), matcher.end())
-    }
-}
-
-private fun normalizeUrl(raw: String): String {
+internal fun normalizeUrl(raw: String): String {
     val url = raw.trim()
     return if (Regex("^[a-zA-Z][a-zA-Z0-9+.-]*://").containsMatchIn(url) || url.startsWith("mailto:")) url else "https://$url"
 }
