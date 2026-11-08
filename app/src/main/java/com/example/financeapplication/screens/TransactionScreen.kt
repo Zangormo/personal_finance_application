@@ -167,8 +167,12 @@ private fun ColumnScope.SpendingForm(balance: Float, savings: Float, onDone: () 
         }
     }
 
-    val essentials = planned.filter { it.type == PlannedType.ESSENTIAL }
-    val wishes = planned.filter { it.type == PlannedType.WISH }
+    // Same order as chosen on the Planned screen (each list has its own sort mode); the lists are
+    // shown once the sort mode is loaded, so they do not jump into place
+    val essentialsSort by remember { PlannedItemsDataStore.getSort(context, PlannedType.ESSENTIAL) }.collectAsState(initial = null)
+    val wishlistSort by remember { PlannedItemsDataStore.getSort(context, PlannedType.WISH) }.collectAsState(initial = null)
+    val essentials = essentialsSort?.let { sort -> planned.filter { it.type == PlannedType.ESSENTIAL }.sortedFor(sort) }.orEmpty()
+    val wishes = wishlistSort?.let { sort -> planned.filter { it.type == PlannedType.WISH }.sortedFor(sort) }.orEmpty()
 
     LazyColumn(
         modifier = Modifier

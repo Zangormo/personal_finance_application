@@ -21,7 +21,8 @@ Available in **English** and **Russian**.
 - **Overview** — statistics for 7 days, a month or a year: totals, a necessity breakdown chart and more.
 - **Planned** — essentials and a wishlist with prices; items can be picked when adding a spending.
   Reusable items stay in the list after being bought. Each list has its own remembered sort
-  (name A–Z / Z–A, newest / oldest first, most expensive / cheapest first, reusable first / last).
+  (name A–Z / Z–A, newest / oldest first, most expensive / cheapest first, reusable first / last),
+  which is also used when picking items while adding a spending.
 - **Subscriptions** — recurring payments (daily / weekly / monthly / yearly) that are charged
   automatically on their date and appear in the history; can be paused.
 - **Debts** — money you owe and money owed to you, with partial repayments, due dates and an
