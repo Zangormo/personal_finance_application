@@ -194,6 +194,12 @@ encoding of every value type, validation of broken / foreign / malicious files, 
 complete device-to-device transfers with realistic data, and a check that every DataStore in the
 code is part of backups.
 
+### AI agents
+
+`CLAUDE.md` describes the project structure and the rules for AI coding agents: keep the existing
+UI style, make sure new data is included in backup export / import, and update `CLAUDE.md` and
+this README after every task.
+
 ---
 
 ## Version
