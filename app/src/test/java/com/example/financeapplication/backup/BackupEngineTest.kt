@@ -146,6 +146,8 @@ class BackupEngineTest {
             it[stringPreferencesKey("subscriptions")] = appGson.toJson(subscriptions)
             it[stringPreferencesKey("planned_items")] = appGson.toJson(planned)
             it[stringPreferencesKey("notes_sort")] = NoteSort.CUSTOM.name
+            it[stringPreferencesKey("planned_sort_essentials")] = PlannedSort.PRICE_HIGH.name
+            it[stringPreferencesKey("planned_sort_wishlist")] = PlannedSort.REUSABLE_FIRST.name
             it[stringPreferencesKey("home_order")] = homeOrder
             it[stringPreferencesKey("home_balance_size")] = BalanceSize.SMALL.name
             it[booleanPreferencesKey("planned_migrated_v1")] = true
@@ -213,6 +215,9 @@ class BackupEngineTest {
             // notes: custom order and sort mode
             assertEquals(NoteSort.CUSTOM.name, string(StoreNames.APP, "notes_sort"))
             assertEquals(mapOf("n1" to 2, "n2" to 0, "n3" to 1), list<Note>(string(StoreNames.APP, "notes")).associate { it.id to it.order })
+            // essentials / wishlist: each list's sort mode
+            assertEquals(PlannedSort.PRICE_HIGH.name, string(StoreNames.APP, "planned_sort_essentials"))
+            assertEquals(PlannedSort.REUSABLE_FIRST.name, string(StoreNames.APP, "planned_sort_wishlist"))
             // tasks: user-defined positions (also of recurring tasks that are done for now)
             assertEquals(
                 tasks.associate { it.id to it.order },

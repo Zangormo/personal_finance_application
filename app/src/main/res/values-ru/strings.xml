@@ -283,6 +283,14 @@
     <string name="sort_title">По алфавиту</string>
     <string name="sort_files">Сначала с файлами</string>
     <string name="sort_custom">Свой порядок</string>
+    <string name="sort_name_az">По названию (А–Я)</string>
+    <string name="sort_name_za">По названию (Я–А)</string>
+    <string name="sort_newest">Сначала новые</string>
+    <string name="sort_oldest">Сначала старые</string>
+    <string name="sort_price_high">Сначала дорогие</string>
+    <string name="sort_price_low">Сначала дешёвые</string>
+    <string name="sort_reusable_first">Сначала многоразовые</string>
+    <string name="sort_reusable_last">Многоразовые в конце</string>
     <string name="files_not_attached">Некоторые файлы не удалось прикрепить</string>
     <string name="attach_file">Прикрепить файл</string>
     <string name="add_link">Добавить ссылку</string>

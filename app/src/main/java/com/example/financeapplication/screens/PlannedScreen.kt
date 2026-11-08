@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Autorenew
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,7 +21,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.financeapplication.datastores.PlannedItem
 import com.example.financeapplication.datastores.PlannedItemsDataStore
+import com.example.financeapplication.datastores.PlannedSort
 import com.example.financeapplication.datastores.PlannedType
+import com.example.financeapplication.datastores.sortedFor
 import com.example.financeapplication.ui.components.*
 import com.example.financeapplication.utils.Money
 import kotlinx.coroutines.launch
@@ -34,7 +38,12 @@ fun PlannedScreen(onBackPress: () -> Unit) {
 
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val type = if (tab == 0) PlannedType.ESSENTIAL else PlannedType.WISH
-    val visible = items.filter { it.type == type }.sortedBy { it.name.lowercase() }
+    // each list remembers its own sort mode
+    val essentialsSort by remember { PlannedItemsDataStore.getSort(context, PlannedType.ESSENTIAL) }.collectAsState(initial = null)
+    val wishlistSort by remember { PlannedItemsDataStore.getSort(context, PlannedType.WISH) }.collectAsState(initial = null)
+    val sort = if (type == PlannedType.ESSENTIAL) essentialsSort else wishlistSort
+    var sortMenu by remember { mutableStateOf(false) }
+    val visible = items.filter { it.type == type }.sortedFor(sort ?: PlannedSort.NAME_AZ)
     val total = visible.sumOf { it.price.toDouble() }.toFloat()
 
     var name by rememberSaveable { mutableStateOf("") }
@@ -48,7 +57,27 @@ fun PlannedScreen(onBackPress: () -> Unit) {
             .fillMaxSize()
             .imePadding()
     ) {
-        ScreenHeader(stringResource(R.string.planned), onBack = onBackPress)
+        ScreenHeader(stringResource(R.string.planned), onBack = onBackPress) {
+            Box {
+                IconButton(onClick = { sortMenu = true }) { Icon(Icons.AutoMirrored.Filled.Sort, stringResource(R.string.sort)) }
+                DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }) {
+                    PlannedSort.entries.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(stringResource(option.label)) },
+                            trailingIcon = {
+                                if (option == (sort ?: PlannedSort.NAME_AZ)) {
+                                    Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
+                                }
+                            },
+                            onClick = {
+                                sortMenu = false
+                                scope.launch { PlannedItemsDataStore.setSort(context, type, option) }
+                            }
+                        )
+                    }
+                }
+            }
+        }
         Column(Modifier.padding(horizontal = 16.dp)) {
             SegmentedSelector(
                 options = listOf(stringResource(R.string.essentials), stringResource(R.string.wishlist)),
@@ -102,7 +131,8 @@ fun PlannedScreen(onBackPress: () -> Unit) {
             }
         }
 
-        if (loadedItems == null) return@Column
+        // built once the items and the sort modes are loaded, so the list does not jump on open
+        if (loadedItems == null || essentialsSort == null || wishlistSort == null) return@Column
         LazyColumn(
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(16.dp),

@@ -20,7 +20,8 @@ Available in **English** and **Russian**.
   income), search by text or amount, details, editing and deleting (the balance is corrected).
 - **Overview** — statistics for 7 days, a month or a year: totals, a necessity breakdown chart and more.
 - **Planned** — essentials and a wishlist with prices; items can be picked when adding a spending.
-  Reusable items stay in the list after being bought.
+  Reusable items stay in the list after being bought. Each list has its own remembered sort
+  (name A–Z / Z–A, newest / oldest first, most expensive / cheapest first, reusable first / last).
 - **Subscriptions** — recurring payments (daily / weekly / monthly / yearly) that are charged
   automatically on their date and appear in the history; can be paused.
 - **Debts** — money you owe and money owed to you, with partial repayments, due dates and an
@@ -64,7 +65,7 @@ Available in **English** and **Russian**.
 
 Everything is transferred: history, balances, all lists, notes with formatting and attached files,
 tasks and categories, subscriptions, debts, the order of everything that can be reordered (home
-tiles, to-do categories, tasks, notes) and layout settings. The language setting is per device and is not
+tiles, to-do categories, tasks, notes), sort modes and layout settings. The language setting is per device and is not
 included.
 
 ### File format
@@ -120,7 +121,7 @@ archives with unsafe paths are rejected, and the current data stays untouched.
 
   | DataStore | Contents |
   |---|---|
-  | `app_data_v2` | notes, to-do categories and tasks, debts, subscriptions, planned items, home layout, notes sort mode |
+  | `app_data_v2` | notes, to-do categories and tasks, debts, subscriptions, planned items, home layout, sort modes of notes, essentials and wishlist |
   | `user_prefs` | balance, savings, first-run flag |
   | `spending_prefs` | spending history |
   | `income_prefs` | income history |
@@ -192,7 +193,7 @@ debug build.
 ./gradlew testDebugUnitTest
 ```
 
-The unit tests cover money parsing, note text formatting, task ordering and, in detail, the backup:
+The unit tests cover money parsing, note text formatting, task ordering, essentials / wishlist sorting and, in detail, the backup:
 encoding of every value type, validation of broken / foreign / malicious files, the ZIP container,
 complete device-to-device transfers with realistic data, and a check that every DataStore in the
 code is part of backups.

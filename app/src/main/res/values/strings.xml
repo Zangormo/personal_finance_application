@@ -281,6 +281,14 @@
     <string name="sort_title">Alphabetical</string>
     <string name="sort_files">With files first</string>
     <string name="sort_custom">Custom order</string>
+    <string name="sort_name_az">Name A–Z</string>
+    <string name="sort_name_za">Name Z–A</string>
+    <string name="sort_newest">Newest first</string>
+    <string name="sort_oldest">Oldest first</string>
+    <string name="sort_price_high">Most expensive first</string>
+    <string name="sort_price_low">Cheapest first</string>
+    <string name="sort_reusable_first">Reusable first</string>
+    <string name="sort_reusable_last">Reusable last</string>
     <string name="files_not_attached">Some files could not be attached</string>
     <string name="attach_file">Attach file</string>
     <string name="add_link">Add link</string>
