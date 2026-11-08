@@ -31,6 +31,12 @@ data class TodoItem(
     val done: Boolean = false,
     val completedAt: Long? = null,
     val createdAt: Long = System.currentTimeMillis(),
+    /**
+     * Position within its category, set when the user reorders tasks (null = never reordered,
+     * shown after the ordered tasks in the automatic order). It is kept while a task is done, so a
+     * recurring task returns to the same place when its period resets.
+     */
+    val order: Int? = null,
 ) {
     /**
      * One-time task: whether it is checked.
@@ -77,16 +83,33 @@ object TodoDataStore {
     suspend fun removeCategory(context: Context, id: String) {
         categories.update(context) { list -> list.removeAll { it.id == id } }
         items.update(context) { list ->
-            for (i in list.indices) if (list[i].categoryId == id) list[i] = list[i].copy(categoryId = UNCATEGORIZED)
+            // their positions belonged to the deleted category, so they go after the ordered tasks
+            for (i in list.indices) if (list[i].categoryId == id) list[i] = list[i].copy(categoryId = UNCATEGORIZED, order = null)
         }
     }
 
-    suspend fun addItem(context: Context, item: TodoItem) = items.update(context) { it.add(item) }
+    /** New tasks go to the end of a category the user has already put in order. */
+    suspend fun addItem(context: Context, item: TodoItem) = items.update(context) { list ->
+        list.add(item.copy(order = nextOrder(list, item.categoryId)))
+    }
 
     suspend fun updateItem(context: Context, item: TodoItem) = items.update(context) { list ->
         val i = list.indexOfFirst { it.id == item.id }
-        if (i != -1) list[i] = item
+        if (i == -1) return@update
+        // moved to another category: take the last place there
+        list[i] = if (list[i].categoryId != item.categoryId) {
+            item.copy(order = nextOrder(list.filter { it.id != item.id }, item.categoryId))
+        } else item
     }
+
+    /** Saves a new order of tasks (ids in the desired order); other tasks keep their positions. */
+    suspend fun reorderItems(context: Context, orderedIds: List<String>) = items.update(context) { list ->
+        val pos = orderedIds.withIndex().associate { it.value to it.index }
+        for (i in list.indices) pos[list[i].id]?.let { list[i] = list[i].copy(order = it) }
+    }
+
+    private fun nextOrder(list: List<TodoItem>, categoryId: String): Int? =
+        list.filter { it.categoryId == categoryId }.mapNotNull { it.order }.maxOrNull()?.plus(1)
 
     suspend fun removeItem(context: Context, id: String) = items.update(context) { list -> list.removeAll { it.id == id } }
 
@@ -105,6 +128,12 @@ object TodoDataStore {
 
 /** Categories in the user's order. */
 fun List<TodoCategory>.ordered(): List<TodoCategory> = sortedWith(compareBy<TodoCategory> { it.order }.thenBy { it.createdAt })
+
+/**
+ * Tasks in the user's order: tasks with an [TodoItem.order] first, by that order; the rest keep
+ * the order they come in (the automatic order of the screen) – `sortedBy` is stable.
+ */
+fun List<TodoItem>.inUserOrder(): List<TodoItem> = sortedBy { it.order ?: Int.MAX_VALUE }
 
 /** The category a task is shown in (tasks of deleted categories fall back to "Uncategorized"). */
 fun TodoItem.effectiveCategory(existing: Set<String>): String =

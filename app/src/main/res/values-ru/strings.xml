@@ -241,7 +241,7 @@
     <string name="done_count">выполнено: %1$d</string>
     <string name="task">Задача</string>
     <string name="todo_tasks_hint">Нажмите, чтобы отметить · зажмите, чтобы изменить</string>
-    <string name="todo_tasks_edit_hint">Нажмите на задачу, чтобы изменить её</string>
+    <string name="todo_tasks_edit_hint">Перетаскивайте задачи · нажмите на задачу, чтобы изменить её</string>
     <string name="todo_empty">Задач пока нет. Нажмите «Задача», чтобы добавить.</string>
     <string name="everything_done">Всё сделано 🎉</string>
     <string name="completed_count">Выполненные (%1$d)</string>

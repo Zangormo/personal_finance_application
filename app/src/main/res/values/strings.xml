@@ -239,7 +239,7 @@
     <string name="done_count">%1$d done</string>
     <string name="task">Task</string>
     <string name="todo_tasks_hint">Tap a task to check it · long press to edit</string>
-    <string name="todo_tasks_edit_hint">Tap a task to edit it</string>
+    <string name="todo_tasks_edit_hint">Drag tasks to reorder · tap a task to edit it</string>
     <string name="todo_empty">No tasks yet. Tap \"Task\" to add one.</string>
     <string name="everything_done">Everything is done 🎉</string>
     <string name="completed_count">Completed (%1$d)</string>

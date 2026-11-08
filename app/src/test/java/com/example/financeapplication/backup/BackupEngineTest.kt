@@ -114,7 +114,8 @@ class BackupEngineTest {
         TodoItem(id = "t1", categoryId = "c-work", title = "Report", comment = "until Friday",
             dueAt = 1_700_000_000_000L, hasTime = true, createdAt = 10L),
         TodoItem(id = "t2", categoryId = "c-home", title = "Water plants", repeat = RepeatPeriod.WEEKLY,
-            completedAt = 1_700_000_000_000L, createdAt = 11L),
+            completedAt = 1_700_000_000_000L, createdAt = 11L, order = 1),
+        TodoItem(id = "t5", categoryId = "c-home", title = "Pay rent", repeat = RepeatPeriod.MONTHLY, createdAt = 14L, order = 0),
         TodoItem(id = "t3", categoryId = UNCATEGORIZED, title = "Done one", done = true, completedAt = 5L, createdAt = 12L),
         TodoItem(id = "t4", categoryId = "deleted-category", title = "Orphan", createdAt = 13L),
     )
@@ -212,6 +213,11 @@ class BackupEngineTest {
             // notes: custom order and sort mode
             assertEquals(NoteSort.CUSTOM.name, string(StoreNames.APP, "notes_sort"))
             assertEquals(mapOf("n1" to 2, "n2" to 0, "n3" to 1), list<Note>(string(StoreNames.APP, "notes")).associate { it.id to it.order })
+            // tasks: user-defined positions (also of recurring tasks that are done for now)
+            assertEquals(
+                tasks.associate { it.id to it.order },
+                list<TodoItem>(string(StoreNames.APP, "todo_items")).associate { it.id to it.order }
+            )
             // list order itself (history order, task order) is unchanged
             assertEquals(spendings.map { it.timestamp }, list<SpendingRecord>(string(StoreNames.SPENDING, "spendings_list")).map { it.timestamp })
             assertEquals(tasks.map { it.id }, list<TodoItem>(string(StoreNames.APP, "todo_items")).map { it.id })

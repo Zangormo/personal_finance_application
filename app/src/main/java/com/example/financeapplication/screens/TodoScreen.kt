@@ -13,8 +13,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListItemInfo
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridItemInfo
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
@@ -44,6 +46,7 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -447,14 +450,20 @@ fun TodoListScreen(categoryRoute: String, onBackPress: () -> Unit) {
     val existing = categories.map { it.id }.toSet()
     val inCategory = items.filter { it.effectiveCategory(existing) == categoryId }
 
-    val pending = inCategory.filter { !it.isDoneNow(now) }.sortedWith(
+    // Automatic order, used for tasks the user has not put in order yet
+    val autoPending = inCategory.filter { !it.isDoneNow(now) }.sortedWith(
         compareBy<TodoItem> { it.repeat != null }
             .thenBy { it.dueAt == null }
             .thenBy { it.dueAt }
             .thenBy { it.createdAt }
     )
-    val doneThisPeriod = inCategory.filter { it.repeat != null && it.isDoneNow(now) }.sortedBy { it.title.lowercase() }
+    val autoDoneThisPeriod = inCategory.filter { it.repeat != null && it.isDoneNow(now) }.sortedBy { it.title.lowercase() }
+    val pending = autoPending.inUserOrder()
+    val doneThisPeriod = autoDoneThisPeriod.inUserOrder()
     val completed = inCategory.filter { it.repeat == null && it.done }.sortedByDescending { it.completedAt ?: 0L }
+    // Every task except checked one-time tasks can be put in order. In edit mode they are shown in
+    // one list, so recurring tasks that are done for now are placed where they come back after the reset.
+    val storedActive = (autoPending + autoDoneThisPeriod).inUserOrder()
 
     var editMode by rememberSaveable { mutableStateOf(false) }
     var showCompleted by rememberSaveable { mutableStateOf(false) }
@@ -485,6 +494,85 @@ fun TodoListScreen(categoryRoute: String, onBackPress: () -> Unit) {
     val toggle: (TodoItem) -> Unit = { item ->
         keepScroll = Triple(items, listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset)
         scope.launch { TodoDataStore.toggle(context, item) }
+    }
+
+    // Reordering in edit mode. While dragging (and until the new order is saved) the list uses a
+    // local order of ids; the task data always comes from the latest stored tasks.
+    var localOrder by remember { mutableStateOf<List<String>?>(null) }
+    var draggingId by remember { mutableStateOf<String?>(null) }
+    var dragTop by remember { mutableFloatStateOf(0f) }
+    var lastSwappedKey by remember { mutableStateOf<Any?>(null) }
+    val storedActiveIds = storedActive.map { it.id }
+    LaunchedEffect(storedActiveIds, draggingId) {
+        if (draggingId == null && localOrder == storedActiveIds) localOrder = null
+    }
+    val active: List<TodoItem> = localOrder?.let { ids ->
+        val byId = storedActive.associateBy { it.id }
+        ids.mapNotNull { byId[it] } + storedActive.filter { it.id !in ids }
+    } ?: storedActive
+    val shown = if (editMode) active else pending + doneThisPeriod
+    val activeIds = active.map { it.id }.toSet()
+    val currentActive by rememberUpdatedState(active)
+    val currentActiveIds by rememberUpdatedState(activeIds)
+    val currentStoredActiveIds by rememberUpdatedState(storedActiveIds)
+    val density = LocalDensity.current
+
+    fun itemAt(y: Float): LazyListItemInfo? {
+        val base = listState.layoutInfo.viewportStartOffset
+        return listState.layoutInfo.visibleItemsInfo.firstOrNull { y >= it.offset - base && y <= it.offset - base + it.size }
+    }
+
+    fun onDragMove() {
+        val id = draggingId ?: return
+        val visible = listState.layoutInfo.visibleItemsInfo
+        val current = visible.firstOrNull { it.key == id } ?: return
+        val center = dragTop + current.size / 2f
+        fun LazyListItemInfo.hit() = center >= offset && center <= offset + size
+        // rows have different heights: ignore the row just swapped with until the finger leaves it
+        lastSwappedKey?.let { k -> if (visible.none { it.key == k && it.hit() }) lastSwappedKey = null }
+        val target = visible.firstOrNull {
+            val key = it.key
+            key != current.key && key != lastSwappedKey && key is String && key in currentActiveIds && it.hit()
+        } ?: return
+        lastSwappedKey = target.key
+        val ids = localOrder ?: currentActive.map { it.id }
+        val from = ids.indexOf(id)
+        val to = ids.indexOf(target.key as String)
+        if (from == -1 || to == -1) return
+        localOrder = ids.toMutableList().apply { add(to, removeAt(from)) }
+        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+    }
+
+    fun finishDrag() {
+        val ids = localOrder
+        if (draggingId != null && ids != null && ids != currentStoredActiveIds) {
+            scope.launch { TodoDataStore.reorderItems(context, ids) }
+        }
+        draggingId = null
+        lastSwappedKey = null
+    }
+
+    // Scroll the list while a task is held near the top or bottom edge
+    LaunchedEffect(draggingId) {
+        if (draggingId == null) return@LaunchedEffect
+        val edge = with(density) { 72.dp.toPx() }
+        while (true) {
+            val info = listState.layoutInfo
+            val current = info.visibleItemsInfo.firstOrNull { it.key == draggingId }
+            if (current != null) {
+                val height = info.viewportSize.height
+                // item offsets are relative to the viewport start (which is above the top padding)
+                val top = dragTop - info.viewportStartOffset
+                val bottom = top + current.size
+                val speed = when {
+                    top < edge -> -(edge - top) / edge * 24f
+                    bottom > height - edge -> (bottom - (height - edge)) / edge * 24f
+                    else -> 0f
+                }
+                if (speed != 0f && listState.scrollBy(speed.coerceIn(-24f, 24f)) != 0f) onDragMove()
+            }
+            withFrameNanos { }
+        }
     }
 
     Scaffold(
@@ -520,20 +608,69 @@ fun TodoListScreen(categoryRoute: String, onBackPress: () -> Unit) {
             if (!loaded) return@Column
             LazyColumn(
                 state = listState,
+                userScrollEnabled = draggingId == null,
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.pointerInput(editMode) {
+                    if (!editMode) return@pointerInput
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                        val startItem = itemAt(down.position.y) ?: return@awaitEachGesture
+                        val id = startItem.key as? String ?: return@awaitEachGesture
+                        if (id !in currentActiveIds) return@awaitEachGesture
+                        var slop = Offset.Zero
+                        var started = false
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                            if (!change.pressed) break
+                            val delta = change.positionChange()
+                            if (!started) {
+                                slop += delta
+                                if (slop.getDistance() > viewConfiguration.touchSlop) {
+                                    started = true
+                                    localOrder = null
+                                    draggingId = id
+                                    dragTop = startItem.offset.toFloat() + slop.y
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                }
+                            } else {
+                                dragTop += delta.y
+                                onDragMove()
+                            }
+                            if (started) change.consume()
+                        }
+                        if (started) finishDrag()
+                    }
+                }
             ) {
                 if (inCategory.isEmpty()) {
                     item(key = "empty") { EmptyState(stringResource(R.string.todo_empty), Modifier.animateItem()) }
                 } else if (pending.isEmpty() && doneThisPeriod.isEmpty() && !showCompleted) {
                     item(key = "alldone") { EmptyState(stringResource(R.string.everything_done), Modifier.animateItem()) }
                 }
-                items(pending + doneThisPeriod, key = { it.id }) { item ->
+                items(shown, key = { it.id }) { item ->
+                    val isDragging = draggingId == item.id
+                    val itemModifier = if (isDragging) {
+                        Modifier
+                            .zIndex(1f)
+                            .graphicsLayer {
+                                val info = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == item.id }
+                                if (info != null) translationY = dragTop - info.offset
+                                scaleX = 1.03f
+                                scaleY = 1.03f
+                                shadowElevation = 20f
+                                shape = CardShape
+                            }
+                    } else {
+                        Modifier.animateItem(fadeInSpec = null)
+                    }
                     TodoRow(
                         item = item,
                         now = now,
                         editMode = editMode,
-                        modifier = Modifier.animateItem(fadeInSpec = null),
+                        draggable = item.id in activeIds,
+                        modifier = itemModifier,
                         onClick = {
                             if (editMode) editing = item
                             else toggle(item)
@@ -570,6 +707,7 @@ fun TodoListScreen(categoryRoute: String, onBackPress: () -> Unit) {
                                 item = item,
                                 now = now,
                                 editMode = editMode,
+                                draggable = false,
                                 modifier = Modifier.animateItem(fadeInSpec = null),
                                 onClick = {
                                     if (editMode) editing = item
@@ -577,7 +715,7 @@ fun TodoListScreen(categoryRoute: String, onBackPress: () -> Unit) {
                                 },
                                 onLongClick = onLongPress,
                                 onDelete = { deleting = item },
-                        onOpenComment = { viewingComment = item }
+                                onOpenComment = { viewingComment = item }
                             )
                         }
                     }
@@ -669,6 +807,8 @@ private fun TodoRow(
     item: TodoItem,
     now: Long,
     editMode: Boolean,
+    /** Can be dragged to another place (shows a drag handle instead of the checkbox in edit mode). */
+    draggable: Boolean,
     modifier: Modifier,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
@@ -712,21 +852,31 @@ private fun TodoRow(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                Modifier
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .background(checkFill)
-                    .border(2.dp, if (doneNow) checkColor else MaterialTheme.colorScheme.outline, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Check, null,
-                    tint = Color.White,
-                    modifier = Modifier
-                        .size(16.dp)
-                        .scale(checkScale)
-                )
+            Crossfade(targetState = editMode && draggable, label = "taskHandle") { handle ->
+                if (handle) {
+                    Icon(
+                        Icons.Default.DragIndicator, null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(24.dp)
+                    )
+                } else {
+                    Box(
+                        Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(checkFill)
+                            .border(2.dp, if (doneNow) checkColor else MaterialTheme.colorScheme.outline, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Check, null,
+                            tint = Color.White,
+                            modifier = Modifier
+                                .size(16.dp)
+                                .scale(checkScale)
+                        )
+                    }
+                }
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {

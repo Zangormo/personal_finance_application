@@ -30,6 +30,9 @@ Available in **English** and **Russian**.
 - **To-do** — tasks in categories shown as tiles. One-time tasks with an optional date and time,
   and recurring tasks that reset every day / week / month / year. Categories can be reordered by
   dragging, renamed and deleted.
+  - In edit mode (long-press a task) tasks can be **reordered by dragging**. The order is saved;
+    a recurring task that is done for now moves down the list and returns to its own place when it
+    resets. New tasks are added at the end.
 - **Notes** — a title and unlimited text with formatting (bold, italic, underline, strike-through,
   highlight, bulleted lists), clickable links, file and link attachments.
   - Sort by last edited, date added, title, "with files first", or a **custom order** changed by
@@ -61,7 +64,7 @@ Available in **English** and **Russian**.
 
 Everything is transferred: history, balances, all lists, notes with formatting and attached files,
 tasks and categories, subscriptions, debts, the order of everything that can be reordered (home
-tiles, to-do categories, notes) and layout settings. The language setting is per device and is not
+tiles, to-do categories, tasks, notes) and layout settings. The language setting is per device and is not
 included.
 
 ### File format
@@ -189,7 +192,7 @@ debug build.
 ./gradlew testDebugUnitTest
 ```
 
-The unit tests cover money parsing, note text formatting and, in detail, the backup:
+The unit tests cover money parsing, note text formatting, task ordering and, in detail, the backup:
 encoding of every value type, validation of broken / foreign / malicious files, the ZIP container,
 complete device-to-device transfers with realistic data, and a check that every DataStore in the
 code is part of backups.
