@@ -281,6 +281,7 @@
     <string name="sort_title">Alphabetical</string>
     <string name="sort_files">With files first</string>
     <string name="sort_custom">Custom order</string>
+    <string name="version_label">Version %1$s</string>
     <string name="sort_name_az">Name A–Z</string>
     <string name="sort_name_za">Name Z–A</string>
     <string name="sort_newest">Newest first</string>

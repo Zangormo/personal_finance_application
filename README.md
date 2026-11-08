@@ -46,7 +46,8 @@ Available in **English** and **Russian**.
 - **Customizable home screen** — long-press a tile (or tap the pencil) to rearrange all tiles;
   the balance tile can be switched between three sizes.
 - **Side menu** with Home and Settings.
-- **Settings** — language (system / English / Russian), backup and transfer, developer page.
+- **Settings** — language (system / English / Russian), backup and transfer, developer page; the
+  app version is shown at the bottom.
 - **Backup & transfer** — export *all* app data to a single file and import it on another device
   (see below).
 
@@ -154,7 +155,7 @@ app/src/
 │   │   ├── screens/                 # one file per screen (+ NoteRichText, MainDrawer)
 │   │   ├── ui/components/           # shared Compose components, date/time pickers
 │   │   ├── ui/theme/                # colors, typography, theme
-│   │   └── utils/Money.kt           # money and date formatting
+│   │   └── utils/                   # Money.kt (money and date formatting), AppInfo.kt (app version)
 │   └── res/
 │       ├── values/strings.xml       # English
 │       ├── values-ru/strings.xml    # Russian

@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
+import com.example.financeapplication.utils.appVersionName
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -23,11 +24,7 @@ object AppBackup {
         workDir = File(context.cacheDir, "backup_work").apply { mkdirs() },
     )
 
-    private fun appVersion(context: Context): String = try {
-        context.packageManager.getPackageInfo(context.packageName, 0).versionName.orEmpty()
-    } catch (_: Exception) {
-        ""
-    }
+    private fun appVersion(context: Context): String = context.appVersionName()
 
     fun suggestedFileName(now: Long = System.currentTimeMillis()): String =
         "PersonalCashier_" + SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.US).format(Date(now)) + "." + BACKUP_EXTENSION

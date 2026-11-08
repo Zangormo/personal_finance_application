@@ -283,6 +283,7 @@
     <string name="sort_title">По алфавиту</string>
     <string name="sort_files">Сначала с файлами</string>
     <string name="sort_custom">Свой порядок</string>
+    <string name="version_label">Версия %1$s</string>
     <string name="sort_name_az">По названию (А–Я)</string>
     <string name="sort_name_za">По названию (Я–А)</string>
     <string name="sort_newest">Сначала новые</string>

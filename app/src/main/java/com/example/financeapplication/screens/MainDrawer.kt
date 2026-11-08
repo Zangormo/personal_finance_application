@@ -20,6 +20,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.example.financeapplication.utils.appVersionName
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -250,42 +253,59 @@ fun SettingsScreen(onBackPress: () -> Unit) {
     val context = LocalContext.current
     Column(Modifier.fillMaxSize()) {
         ScreenHeader(stringResource(R.string.settings), onBack = onBackPress)
-        Column(
-            Modifier.padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            com.example.financeapplication.backup.BackupCard()
-            AppCard(Modifier.fillMaxWidth()) {
-                SettingsRowHeader(Icons.Default.Language, stringResource(R.string.language), null)
-                Spacer(Modifier.height(12.dp))
-                val selected = LANGUAGES.indexOf(currentLanguage(context)).coerceAtLeast(0)
-                SegmentedSelector(
-                    // language names are always written in their own language
-                    options = listOf(stringResource(R.string.language_system), "English", "Русский"),
-                    selectedIndex = selected,
-                    onSelect = { i -> if (i != selected) setLanguage(context, LANGUAGES[i]) }
-                )
-            }
-            AppCard(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = {
-                    try {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(DEVELOPERS_PAGE)))
-                    } catch (_: ActivityNotFoundException) {
-                        Toast.makeText(context, context.getString(R.string.no_browser), Toast.LENGTH_SHORT).show()
-                    }
-                }
+        // Scrollable, with the version label at the bottom of the screen (or below the cards when
+        // they do not fit): the content is at least as high as the screen, so the spacer can push it down
+        BoxWithConstraints(Modifier.weight(1f)) {
+            Column(
+                Modifier
+                    .verticalScroll(rememberScrollState())
+                    .heightIn(min = maxHeight)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.weight(1f)) {
-                        SettingsRowHeader(Icons.Default.Code, stringResource(R.string.developers_page), "zangormo.github.io")
-                    }
-                    Icon(
-                        Icons.AutoMirrored.Filled.OpenInNew, null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
+                com.example.financeapplication.backup.BackupCard()
+                AppCard(Modifier.fillMaxWidth()) {
+                    SettingsRowHeader(Icons.Default.Language, stringResource(R.string.language), null)
+                    Spacer(Modifier.height(12.dp))
+                    val selected = LANGUAGES.indexOf(currentLanguage(context)).coerceAtLeast(0)
+                    SegmentedSelector(
+                        // language names are always written in their own language
+                        options = listOf(stringResource(R.string.language_system), "English", "Русский"),
+                        selectedIndex = selected,
+                        onSelect = { i -> if (i != selected) setLanguage(context, LANGUAGES[i]) }
                     )
                 }
+                AppCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        try {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(DEVELOPERS_PAGE)))
+                        } catch (_: ActivityNotFoundException) {
+                            Toast.makeText(context, context.getString(R.string.no_browser), Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.weight(1f)) {
+                            SettingsRowHeader(Icons.Default.Code, stringResource(R.string.developers_page), "zangormo.github.io")
+                        }
+                        Icon(
+                            Icons.AutoMirrored.Filled.OpenInNew, null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+                Spacer(Modifier.weight(1f))
+                val version = remember { context.appVersionName() }
+                Text(
+                    stringResource(R.string.app_name) + if (version.isNotEmpty()) " · " + stringResource(R.string.version_label, version) else "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(bottom = 16.dp)
+                )
             }
         }
     }
