@@ -45,6 +45,7 @@ Available in **English** and **Russian**.
 ### App
 - **Customizable home screen** — long-press a tile (or tap the pencil) to rearrange all tiles;
   the balance tile can be switched between three sizes.
+- **Calendars** in all date pickers start the week on Monday, whatever the device region.
 - **Side menu** with Home and Settings.
 - **Settings** — language (system / English / Russian), backup and transfer, developer page; the
   app version is shown at the bottom.
@@ -195,7 +196,8 @@ debug build.
 ./gradlew testDebugUnitTest
 ```
 
-The unit tests cover money parsing, note text formatting, task ordering, essentials / wishlist sorting and, in detail, the backup:
+The unit tests cover money parsing, note text formatting, task ordering, essentials / wishlist sorting,
+the Monday-first calendar locale and, in detail, the backup:
 encoding of every value type, validation of broken / foreign / malicious files, the ZIP container,
 complete device-to-device transfers with realistic data, and a check that every DataStore in the
 code is part of backups.

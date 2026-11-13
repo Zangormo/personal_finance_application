@@ -5,8 +5,27 @@ import com.example.financeapplication.R
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import java.time.DayOfWeek
+import java.time.temporal.WeekFields
 import java.util.Calendar
+import java.util.Locale
 import java.util.TimeZone
+
+/**
+ * The current locale adjusted so calendars start the week on Monday (the DatePicker takes the first
+ * day of the week from its locale). Tries the Unicode `fw-mon` extension first and, if the platform
+ * ignores it, swaps the region to a Monday-first one while keeping the language.
+ */
+internal fun mondayFirstLocale(base: Locale = Locale.getDefault()): Locale {
+    fun Locale.mondayFirst() =
+        runCatching { WeekFields.of(this).firstDayOfWeek == DayOfWeek.MONDAY }.getOrDefault(false)
+    if (base.mondayFirst()) return base
+    val withExtension = runCatching {
+        Locale.Builder().setLocale(base).setUnicodeLocaleKeyword("fw", "mon").build()
+    }.getOrNull()
+    if (withExtension != null && withExtension.mondayFirst()) return withExtension
+    return Locale.Builder().setLanguage(base.language).setRegion("GB").build()
+}
 
 /** Local midnight of the given local timestamp, expressed as UTC midnight of the same calendar day (what DatePicker uses). */
 private fun localToUtcDay(local: Long): Long {
@@ -39,12 +58,16 @@ fun AppDatePickerDialog(
     onlyTodayOrLater: Boolean = false,
 ) {
     val todayUtc = remember { localToUtcDay(System.currentTimeMillis()) }
-    val state = rememberDatePickerState(
-        initialSelectedDateMillis = localToUtcDay(initial ?: System.currentTimeMillis()),
-        selectableDates = if (onlyTodayOrLater) object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis >= todayUtc
-        } else DatePickerDefaults.AllDates
-    )
+    // Built directly (not rememberDatePickerState) so we can pass a Monday-first locale.
+    val state = remember {
+        DatePickerState(
+            locale = mondayFirstLocale(),
+            initialSelectedDateMillis = localToUtcDay(initial ?: System.currentTimeMillis()),
+            selectableDates = if (onlyTodayOrLater) object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis >= todayUtc
+            } else DatePickerDefaults.AllDates
+        )
+    }
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
