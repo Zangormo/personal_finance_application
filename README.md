@@ -212,4 +212,4 @@ this README after every task.
 
 ## Version
 
-**0.2.3** (alpha)
+**0.2.5** (alpha)
